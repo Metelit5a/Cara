@@ -1,0 +1,97 @@
+# ========================
+# Python
+# ========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+*.so
+*.pyd
+venv/
+env/
+.venv/
+*.whl
+
+# ========================
+# Model weights & data
+# ========================
+*.pth
+*.pt
+*.onnx
+model_service/checkpoints/*.pth
+model_service/checkpoints/*.pt
+!model_service/checkpoints/.gitkeep
+
+# Training data
+data/
+*.csv
+*.json.bak
+
+# Kaggle cache
+.cache/
+
+# ========================
+# Environment & secrets
+# ========================
+.env
+.env.local
+.env.*.local
+
+# ========================
+# IDE & editors
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ========================
+# Node / Frontend
+# ========================
+frontend/node_modules/
+frontend/build/
+frontend/.env.local
+
+# ========================
+# Logs & runtime
+# ========================
+*.log
+*.pid
+
+# ========================
+# OS files
+# ========================
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# ========================
+# Storage (keep structure, ignore data)
+# ========================
+storage/reports/*.json
+storage/history/*.json
+!storage/reports/.gitkeep
+!storage/history/.gitkeep
+
+# ========================
+# Docker
+# ========================
+docker-compose.override.yml
+
+# ========================
+# Jupyter / notebooks
+# ========================
+.ipynb_checkpoints/
+*.ipynb
+
+# ========================
+# Misc
+# ========================
+prompt.txt
+task3_ronen_and_sarit.ipynb

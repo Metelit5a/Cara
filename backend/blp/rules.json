@@ -1,0 +1,124 @@
+{
+  "rules": {
+    "clear": {
+      "explanation": "Your skin appears clear with no significant acne detected.",
+      "educational_note": "Maintaining clear skin involves consistent skincare routines. Focus on gentle cleansing, sun protection, and hydration to keep your skin healthy.",
+      "recommendations": [
+        {
+          "ingredient": "Niacinamide (Vitamin B3)",
+          "reason": "Helps maintain skin barrier integrity and provides antioxidant protection for clear skin maintenance.",
+          "category": "maintenance"
+        },
+        {
+          "ingredient": "Hyaluronic Acid",
+          "reason": "Provides lightweight hydration without clogging pores, keeping skin plump and healthy.",
+          "category": "hydration"
+        },
+        {
+          "ingredient": "Broad-Spectrum SPF 30+",
+          "reason": "Daily sun protection prevents premature aging and helps maintain even skin tone.",
+          "category": "sun_protection"
+        }
+      ]
+    },
+    "mild": {
+      "explanation": "Mild acne has been detected. This typically presents as occasional small blemishes or comedones (blackheads/whiteheads).",
+      "educational_note": "Mild acne is very common and often responds well to consistent over-the-counter skincare routines. Gentle, non-comedogenic products are recommended. Avoid harsh scrubbing which can irritate the skin further.",
+      "recommendations": [
+        {
+          "ingredient": "Salicylic Acid (BHA) 0.5-2%",
+          "reason": "A beta-hydroxy acid that penetrates into pores to dissolve excess oil and dead skin cells, helping to clear minor breakouts.",
+          "category": "exfoliation"
+        },
+        {
+          "ingredient": "Niacinamide (Vitamin B3) 5%",
+          "reason": "Helps regulate sebum production, minimize the appearance of pores, and reduce mild inflammation.",
+          "category": "oil_control"
+        },
+        {
+          "ingredient": "Tea Tree Oil (diluted)",
+          "reason": "A natural antimicrobial that can help reduce minor blemishes when applied topically in low concentrations.",
+          "category": "antimicrobial"
+        },
+        {
+          "ingredient": "Non-comedogenic Moisturizer",
+          "reason": "Maintaining skin hydration is important even with mild acne. Look for lightweight, oil-free formulations.",
+          "category": "hydration"
+        }
+      ]
+    },
+    "moderate": {
+      "explanation": "Moderate acne has been detected. This typically includes a mix of inflammatory papules, pustules, and comedones across broader areas of the face.",
+      "educational_note": "Moderate acne benefits from a more targeted skincare approach. Consider products with active ingredients that address both bacterial factors and excess oil production. Consistency is key — most active ingredients need 6-8 weeks to show significant improvement. Avoid picking or squeezing blemishes as this can lead to scarring.",
+      "recommendations": [
+        {
+          "ingredient": "Benzoyl Peroxide 2.5-5%",
+          "reason": "An effective antimicrobial agent that reduces acne-causing bacteria on the skin surface while helping to unclog pores.",
+          "category": "antimicrobial"
+        },
+        {
+          "ingredient": "Salicylic Acid (BHA) 2%",
+          "reason": "Helps unclog pores and reduce excess oil production, targeting the root causes of comedonal acne.",
+          "category": "exfoliation"
+        },
+        {
+          "ingredient": "Azelaic Acid 10-15%",
+          "reason": "Addresses both bacterial factors and post-inflammatory hyperpigmentation, helping with active breakouts and residual marks.",
+          "category": "anti_inflammatory"
+        },
+        {
+          "ingredient": "Zinc-based Formulations",
+          "reason": "Zinc has anti-inflammatory and oil-regulating properties that can help calm moderate breakouts.",
+          "category": "oil_control"
+        },
+        {
+          "ingredient": "Centella Asiatica (Cica)",
+          "reason": "A soothing ingredient that supports skin healing and reduces irritation from active ingredients.",
+          "category": "soothing"
+        }
+      ]
+    },
+    "severe": {
+      "explanation": "Severe acne has been detected. This may include widespread inflammatory lesions, deep papules, and extensive breakout coverage.",
+      "educational_note": "Severe acne typically benefits from professional dermatological guidance in addition to topical care. The recommendations below are educational skincare insights — for persistent severe acne, consulting a dermatologist is strongly encouraged. They can provide prescription-strength treatments tailored to your specific needs. This analysis is for educational purposes only and does not constitute medical advice.",
+      "recommendations": [
+        {
+          "ingredient": "Benzoyl Peroxide 5-10%",
+          "reason": "Higher concentration antimicrobial treatment that helps reduce bacterial load on heavily affected areas.",
+          "category": "antimicrobial"
+        },
+        {
+          "ingredient": "Retinol (Vitamin A) 0.3-0.5%",
+          "reason": "Promotes cell turnover and helps prevent clogged pores. Start with lower concentrations and build tolerance gradually. Use at night with SPF during the day.",
+          "category": "cell_turnover"
+        },
+        {
+          "ingredient": "Azelaic Acid 15-20%",
+          "reason": "Pharmaceutical-grade azelaic acid addresses inflammation, bacterial factors, and hyperpigmentation simultaneously.",
+          "category": "anti_inflammatory"
+        },
+        {
+          "ingredient": "Gentle Cleanser (pH 5.5)",
+          "reason": "Severely affected skin needs gentle cleansing to avoid further barrier damage. Avoid harsh sulfates and physical scrubs.",
+          "category": "cleansing"
+        },
+        {
+          "ingredient": "Ceramide-based Moisturizer",
+          "reason": "Helps restore the skin barrier which is often compromised with severe acne and active treatments.",
+          "category": "barrier_repair"
+        },
+        {
+          "ingredient": "SPF 50+ Sunscreen",
+          "reason": "Post-inflammatory skin is highly susceptible to sun damage and pigmentation. Daily sun protection is essential.",
+          "category": "sun_protection"
+        }
+      ]
+    }
+  },
+  "confidence_thresholds": {
+    "high": 0.75,
+    "medium": 0.5,
+    "low": 0.4
+  },
+  "low_confidence_message": "The analysis confidence is below our reliability threshold. The image quality may be insufficient for accurate assessment. Please try again with a clearer, well-lit photo of your face."
+}
