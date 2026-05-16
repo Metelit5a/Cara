@@ -4,6 +4,7 @@ import { getReport } from '../api';
 
 const severityColors = {
   clear: '#48BB78',
+  minimal: '#48BB78',
   mild: '#ECC94B',
   moderate: '#ED8936',
   severe: '#F56565',
@@ -63,16 +64,17 @@ function ResultsPage() {
   }
 
   const confidencePercent = Math.round(report.confidence * 100);
-  const color = severityColors[report.severity] || '#A0AEC0';
+  const color = severityColors[report.acne_severity] || '#A0AEC0';
+  const poreColor = severityColors[report.pore_severity] || '#A0AEC0';
 
   return (
     <div>
-      {/* Severity & Confidence */}
+      {/* Acne Severity & Confidence */}
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h2>Analysis Results</h2>
-          <span className={`severity-badge severity-${report.severity}`}>
-            {report.severity}
+          <h2>Acne Analysis</h2>
+          <span className={`severity-badge severity-${report.acne_severity}`}>
+            {report.acne_severity}
           </span>
         </div>
 
@@ -88,7 +90,37 @@ function ResultsPage() {
             />
           </div>
         </div>
+      </div>
 
+      {/* Pores Analysis */}
+      {report.pore_severity && (
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h2>Pores Analysis</h2>
+            <span className={`severity-badge severity-${report.pore_severity}`}>
+              {report.pore_severity}
+            </span>
+          </div>
+
+          {report.pore_confidence && (
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                <span style={{ color: 'var(--text-light)' }}>Confidence</span>
+                <span style={{ fontWeight: '600' }}>{Math.round(report.pore_confidence * 100)}%</span>
+              </div>
+              <div className="confidence-bar">
+                <div
+                  className="confidence-fill"
+                  style={{ width: `${Math.round(report.pore_confidence * 100)}%`, background: poreColor }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Combined Explanation */}
+      <div className="card">
         <p style={{ color: 'var(--text-light)', lineHeight: '1.7' }}>
           {report.explanation}
         </p>

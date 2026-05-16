@@ -20,7 +20,7 @@ class TestJsonStorageRepository:
         return AnalysisReport(
             id="test-123",
             status=AnalysisStatus.SUCCESS,
-            severity=AcneSeverity.MILD,
+            acne_severity=AcneSeverity.MILD,
             confidence=0.85,
             explanation="Test explanation",
             recommendations=[],
@@ -33,7 +33,7 @@ class TestJsonStorageRepository:
 
         assert retrieved is not None
         assert retrieved.id == "test-123"
-        assert retrieved.severity == AcneSeverity.MILD
+        assert retrieved.acne_severity == AcneSeverity.MILD
         assert retrieved.confidence == 0.85
 
     async def test_get_nonexistent(self, repo):

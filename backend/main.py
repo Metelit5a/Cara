@@ -26,19 +26,28 @@ async def lifespan(app: FastAPI):
     logger.info("Loading models...")
     registry = get_registry()
 
+    # Load acne model
     weights_path = settings.model_weights_path
     if Path(weights_path).exists():
         registry.register_acne_model(weights_path)
         logger.info("Acne severity model loaded successfully")
     else:
         logger.warning(f"Model weights not found at {weights_path} — running without model")
-        # Register model without weights for structural testing
         registry.register_acne_model(weights_path)
+
+    # Load pores model
+    pores_path = settings.pores_model_weights_path
+    if Path(pores_path).exists():
+        registry.register_pores_model(pores_path)
+        logger.info("Pores severity model loaded successfully")
+    else:
+        logger.warning(f"Pores weights not found at {pores_path} — running without pores model")
+        registry.register_pores_model(pores_path)
 
     # Ensure storage directories exist
     Path(settings.storage_path, "reports").mkdir(parents=True, exist_ok=True)
 
-    logger.info("Cara backend ready")
+    logger.info(f"Cara backend ready — models loaded: {registry.loaded_models}")
     yield
     # Shutdown
     logger.info("Shutting down Cara backend")
@@ -70,5 +79,6 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         model_loaded=registry.is_loaded("acne"),
+        pores_model_loaded=registry.is_loaded("pores"),
         version="0.1.0",
     )
