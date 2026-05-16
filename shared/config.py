@@ -11,9 +11,12 @@ class Settings(BaseSettings):
     backend_port: int = 8000
     debug: bool = False
 
-    # Model
+    # Model - Acne
     model_weights_path: str = "model_service/checkpoints/acne_model_best.pth"
     confidence_threshold: float = 0.4
+
+    # Model - Pores
+    pores_model_weights_path: str = "model_service/checkpoints/pores_model_best.pth"
 
     # Storage
     storage_backend: str = "json"  # "json" or "mongodb"

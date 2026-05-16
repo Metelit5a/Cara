@@ -28,6 +28,7 @@ model_service/checkpoints/*.pt
 
 # Training data
 data/
+!data/README.md
 *.csv
 *.json.bak
 
