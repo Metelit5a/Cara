@@ -62,6 +62,7 @@ class BLPResult(BaseModel):
     """Output from the Business Logic Processing layer."""
     acne_severity: AcneSeverity
     pore_severity: Optional[PoreSeverity] = None
+    general_acne_severity: Optional[AcneSeverity] = None
     recommendations: List[Recommendation]
     explanation: str
     educational_note: str
@@ -76,8 +77,10 @@ class AnalysisReport(BaseModel):
     status: AnalysisStatus
     acne_severity: Optional[AcneSeverity] = None
     pore_severity: Optional[PoreSeverity] = None
+    general_acne_severity: Optional[AcneSeverity] = None
     confidence: Optional[float] = None
     pore_confidence: Optional[float] = None
+    general_acne_confidence: Optional[float] = None
     pore_count: Optional[int] = None
     explanation: Optional[str] = None
     recommendations: List[Recommendation] = []
@@ -99,4 +102,5 @@ class HealthResponse(BaseModel):
     status: str = "healthy"
     model_loaded: bool
     pores_model_loaded: bool = False
+    general_acne_model_loaded: bool = False
     version: str = "0.1.0"

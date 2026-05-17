@@ -48,15 +48,24 @@ class AnalysisService:
             await self.repository.save_report(report)
             return report
 
-        # Step 3: Confidence check on acne model (primary model)
+        # Step 3: Confidence check — at least one acne model must pass threshold
         blp_engine = get_blp_engine()
         acne_pred = predictions.get("acne")
-        if acne_pred and acne_pred.confidence < blp_engine.confidence_threshold:
-            report = ReportBuilder.build_low_confidence_report(
-                acne_pred, blp_engine.low_confidence_message
-            )
-            await self.repository.save_report(report)
-            return report
+        general_acne_pred = predictions.get("general_acne")
+
+        # Accept if ANY acne model passes the confidence threshold
+        acne_conf_ok = acne_pred and acne_pred.confidence >= blp_engine.confidence_threshold
+        general_conf_ok = general_acne_pred and general_acne_pred.confidence >= blp_engine.confidence_threshold
+
+        if not acne_conf_ok and not general_conf_ok:
+            # Neither model has sufficient confidence
+            best_pred = acne_pred or general_acne_pred
+            if best_pred:
+                report = ReportBuilder.build_low_confidence_report(
+                    best_pred, blp_engine.low_confidence_message
+                )
+                await self.repository.save_report(report)
+                return report
 
         # Step 4: Business Logic Processing (receives all predictions)
         blp_result = blp_engine.process(predictions)
