@@ -64,6 +64,39 @@ class FaceDetector:
 
         return (x, y, w, h)
 
+    def detect_all(self, image: np.ndarray) -> Tuple[int, Optional[Tuple[int, int, int, int]]]:
+        """Detect all faces and return count + bbox of largest face.
+        
+        Returns:
+            Tuple of (face_count, bbox) where bbox is (x, y, w, h) or None
+        """
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        faces = self.detector.detectMultiScale(
+            gray,
+            scaleFactor=1.1,
+            minNeighbors=5,
+            minSize=(60, 60),
+        )
+
+        face_count = len(faces)
+        if face_count == 0:
+            return 0, None
+
+        # Use the largest detected face
+        faces = sorted(faces, key=lambda f: f[2] * f[3], reverse=True)
+        x, y, w, h = faces[0]
+
+        # Add padding around the face
+        img_h, img_w = image.shape[:2]
+        pad_x = int(w * 0.2)
+        pad_y = int(h * 0.2)
+        x = max(0, x - pad_x)
+        y = max(0, y - pad_y)
+        w = min(img_w - x, w + 2 * pad_x)
+        h = min(img_h - y, h + 2 * pad_y)
+
+        return face_count, (x, y, w, h)
+
 
 class PreprocessingPipeline:
     """Complete preprocessing pipeline for skin analysis images."""
