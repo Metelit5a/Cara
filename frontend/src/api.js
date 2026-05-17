@@ -1,5 +1,22 @@
 const API_BASE = '/api/v1';
 
+export async function detectFaces(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE}/detect-face`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || `Server error: ${response.status}`);
+  }
+
+  return response.json();
+}
+
 export async function analyzeImage(file) {
   const formData = new FormData();
   formData.append('file', file);
