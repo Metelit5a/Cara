@@ -11,9 +11,17 @@ class Settings(BaseSettings):
     backend_port: int = 8000
     debug: bool = False
 
-    # Model
+    # Model - Acne (acne04)
     model_weights_path: str = "model_service/checkpoints/acne_model_best.pth"
-    confidence_threshold: float = 0.4
+    # Lowered from 0.4: the 4-class softmax often peaks at 0.3-0.45 on real-world
+    # photos even when correct, especially with class-balanced training.
+    confidence_threshold: float = 0.25
+
+    # Model - Pores
+    pores_model_weights_path: str = "model_service/checkpoints/pores_model_best.pth"
+
+    # Model - General Acne (Roboflow COCO, lesion-count severity)
+    general_acne_model_weights_path: str = "model_service/checkpoints/general_acne_model_best.pth"
 
     # Storage
     storage_backend: str = "json"  # "json" or "mongodb"

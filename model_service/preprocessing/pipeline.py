@@ -1,14 +1,12 @@
 """
 Image Preprocessing Pipeline
 
-Modular preprocessing pipeline for skin analysis:
-1. Face detection (OpenCV Haar Cascade)
-2. Face cropping
-3. Resize
-4. Brightness normalization
-5. Tensor normalization
-
-Designed to be reusable across all future model services.
+Shared by both inference AND training so the distributions match:
+1. Face detection (OpenCV Haar Cascade) — tight bounding box, NO padding
+2. Elliptical face mask — zero out the corners (background) so the model
+   only sees face skin (approximates face contour without landmark deps)
+3. Resize to 224x224
+4. ImageNet normalization
 """
 
 import cv2
@@ -19,50 +17,82 @@ from torchvision import transforms
 from typing import Tuple, Optional
 from shared.schemas import PreprocessingResult
 
-# Standard image size for EfficientNetB0
 IMAGE_SIZE = (224, 224)
-
-# ImageNet normalization values
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
 
 class FaceDetector:
-    """Face detection using OpenCV Haar Cascade."""
+    """Tight Haar-cascade face detector (no artificial padding)."""
 
-    def __init__(self, min_confidence: float = 0.5):
-        # OpenCV ships with pre-trained Haar cascades
+    def __init__(self, min_size: int = 60):
         cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         self.detector = cv2.CascadeClassifier(cascade_path)
-        self.min_confidence = min_confidence
+        self.min_size = min_size
 
     def detect(self, image: np.ndarray) -> Optional[Tuple[int, int, int, int]]:
-        """Detect face and return bounding box (x, y, w, h) or None."""
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        gray = cv2.equalizeHist(gray)
         faces = self.detector.detectMultiScale(
             gray,
             scaleFactor=1.1,
-            minNeighbors=5,
-            minSize=(60, 60),
+            minNeighbors=4,
+            minSize=(self.min_size, self.min_size),
         )
-
         if len(faces) == 0:
             return None
-
-        # Use the largest detected face
         faces = sorted(faces, key=lambda f: f[2] * f[3], reverse=True)
         x, y, w, h = faces[0]
+        return (int(x), int(y), int(w), int(h))
 
-        # Add padding around the face
-        img_h, img_w = image.shape[:2]
-        pad_x = int(w * 0.2)
-        pad_y = int(h * 0.2)
-        x = max(0, x - pad_x)
-        y = max(0, y - pad_y)
-        w = min(img_w - x, w + 2 * pad_x)
-        h = min(img_h - y, h + 2 * pad_y)
 
-        return (x, y, w, h)
+def apply_face_mask(face_bgr: np.ndarray) -> np.ndarray:
+    """Mask the bounding-box corners with the face mean colour so only the
+    face contour (inscribed ellipse) remains visible. Removes background
+    pixels that confuse the classifier without needing facial landmarks."""
+    h, w = face_bgr.shape[:2]
+    mask = np.zeros((h, w), dtype=np.uint8)
+    cv2.ellipse(
+        mask,
+        center=(w // 2, h // 2),
+        axes=(int(w * 0.48), int(h * 0.55)),
+        angle=0,
+        startAngle=0,
+        endAngle=360,
+        color=255,
+        thickness=-1,
+    )
+    mean_color = face_bgr.reshape(-1, 3).mean(axis=0).astype(np.uint8)
+    background = np.full_like(face_bgr, mean_color)
+    return np.where(mask[..., None] == 255, face_bgr, background)
+
+
+def preprocess_face_array(
+    image_bgr: np.ndarray,
+    detector: Optional[FaceDetector] = None,
+    apply_mask: bool = True,
+) -> Tuple[np.ndarray, bool]:
+    """Core pipeline shared by training and inference.
+
+    Returns (RGB uint8 224x224 numpy array, face_detected).
+    """
+    detector = detector or FaceDetector()
+    bbox = detector.detect(image_bgr)
+    face_detected = bbox is not None
+
+    if face_detected:
+        x, y, w, h = bbox
+        cropped = image_bgr[y:y + h, x:x + w]
+        if cropped.size == 0:
+            cropped = image_bgr
+            face_detected = False
+        elif apply_mask:
+            cropped = apply_face_mask(cropped)
+    else:
+        cropped = image_bgr
+
+    resized = cv2.resize(cropped, IMAGE_SIZE, interpolation=cv2.INTER_AREA)
+    return cv2.cvtColor(resized, cv2.COLOR_BGR2RGB), face_detected
 
     def detect_all(self, image: np.ndarray) -> Tuple[int, Optional[Tuple[int, int, int, int]]]:
         """Detect all faces and return count + bbox of largest face.
@@ -99,45 +129,28 @@ class FaceDetector:
 
 
 class PreprocessingPipeline:
-    """Complete preprocessing pipeline for skin analysis images."""
+    """Inference-time preprocessing pipeline."""
 
-    def __init__(self, require_face: bool = True):
+    def __init__(self, require_face: bool = True, apply_mask: bool = True):
         self.face_detector = FaceDetector()
         self.require_face = require_face
-
+        self.apply_mask = apply_mask
         self.transform = transforms.Compose([
-            transforms.Resize(IMAGE_SIZE),
             transforms.ToTensor(),
             transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
         ])
 
-    def _normalize_brightness(self, image: np.ndarray) -> np.ndarray:
-        """Apply CLAHE for brightness normalization."""
-        lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-        l_channel, a, b = cv2.split(lab)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-        l_channel = clahe.apply(l_channel)
-        lab = cv2.merge([l_channel, a, b])
-        return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
-
     def process(self, image_bytes: bytes) -> Tuple[PreprocessingResult, Optional[torch.Tensor]]:
-        """Run full preprocessing pipeline on raw image bytes.
-
-        Returns:
-            Tuple of (PreprocessingResult, tensor or None)
-        """
-        # Decode image
         nparr = np.frombuffer(image_bytes, np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
         if image is None:
             return PreprocessingResult(
                 success=False, face_detected=False, message="Invalid image data"
             ), None
 
-        # Face detection
-        bbox = self.face_detector.detect(image)
-        face_detected = bbox is not None
+        rgb, face_detected = preprocess_face_array(
+            image, detector=self.face_detector, apply_mask=self.apply_mask
+        )
 
         if self.require_face and not face_detected:
             return PreprocessingResult(
@@ -146,36 +159,19 @@ class PreprocessingPipeline:
                 message="No face detected in image. Please upload a clear face photo.",
             ), None
 
-        # Crop to face if detected
-        if face_detected:
-            x, y, w, h = bbox
-            cropped = image[y:y + h, x:x + w]
-            if cropped.size > 0:
-                image = cropped
-
-        # Brightness normalization
-        image = self._normalize_brightness(image)
-
-        # Convert BGR to RGB and to PIL
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        pil_image = Image.fromarray(image_rgb)
-
-        # Apply torchvision transforms
+        pil_image = Image.fromarray(rgb)
         tensor = self.transform(pil_image)
-
         return PreprocessingResult(
             success=True,
             face_detected=face_detected,
-            message="Preprocessing complete",
+            message="Preprocessing complete" if face_detected else "Processed without face crop",
         ), tensor
 
 
-# Module-level singleton
 _pipeline: Optional[PreprocessingPipeline] = None
 
 
 def get_pipeline() -> PreprocessingPipeline:
-    """Get or create the preprocessing pipeline singleton."""
     global _pipeline
     if _pipeline is None:
         _pipeline = PreprocessingPipeline()

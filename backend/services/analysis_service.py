@@ -2,7 +2,10 @@
 Analysis Service
 
 Orchestrates the full analysis pipeline:
-  image bytes → preprocessing → model inference → BLP → report → storage
+  image bytes → preprocessing → model inference (acne + pores) → BLP → report → storage
+
+Both models run on the same image. The BLP engine waits for both
+results before generating a combined report.
 """
 
 from typing import List, Optional
@@ -24,7 +27,7 @@ class AnalysisService:
     async def analyze_image(self, image_bytes: bytes) -> AnalysisReport:
         """Run the full analysis pipeline on an uploaded image."""
 
-        # Step 1: Preprocessing
+        # Step 1: Preprocessing (for acne model - needs tensor)
         pipeline = get_pipeline()
         preprocess_result, tensor = pipeline.process(image_bytes)
 
@@ -36,29 +39,39 @@ class AnalysisService:
             await self.repository.save_report(report)
             return report
 
-        # Step 2: Model inference
+        # Step 2: Run both models (same tensor for both)
         orchestrator = get_orchestrator()
         try:
-            prediction = orchestrator.predict_acne(tensor)
+            predictions = orchestrator.predict_all(tensor)
         except RuntimeError as e:
             report = ReportBuilder.build_error_report(str(e))
             await self.repository.save_report(report)
             return report
 
-        # Step 3: Confidence check
+        # Step 3: Confidence check — at least one acne model must pass threshold
         blp_engine = get_blp_engine()
-        if prediction.confidence < blp_engine.confidence_threshold:
-            report = ReportBuilder.build_low_confidence_report(
-                prediction, blp_engine.low_confidence_message
-            )
-            await self.repository.save_report(report)
-            return report
+        acne_pred = predictions.get("acne")
+        general_acne_pred = predictions.get("general_acne")
 
-        # Step 4: Business Logic Processing
-        blp_result = blp_engine.process(prediction)
+        # Accept if ANY acne model passes the confidence threshold
+        acne_conf_ok = acne_pred and acne_pred.confidence >= blp_engine.confidence_threshold
+        general_conf_ok = general_acne_pred and general_acne_pred.confidence >= blp_engine.confidence_threshold
+
+        if not acne_conf_ok and not general_conf_ok:
+            # Neither model has sufficient confidence
+            best_pred = acne_pred or general_acne_pred
+            if best_pred:
+                report = ReportBuilder.build_low_confidence_report(
+                    best_pred, blp_engine.low_confidence_message
+                )
+                await self.repository.save_report(report)
+                return report
+
+        # Step 4: Business Logic Processing (receives all predictions)
+        blp_result = blp_engine.process(predictions)
 
         # Step 5: Report generation
-        report = ReportBuilder.build_success_report(prediction, blp_result)
+        report = ReportBuilder.build_success_report(predictions, blp_result)
 
         # Step 6: Persist
         await self.repository.save_report(report)

@@ -1,5 +1,5 @@
 {
-  "rules": {
+  "acne_rules": {
     "clear": {
       "explanation": "Your skin appears clear with no significant acne detected.",
       "educational_note": "Maintaining clear skin involves consistent skincare routines. Focus on gentle cleansing, sun protection, and hydration to keep your skin healthy.",
@@ -111,6 +111,102 @@
           "ingredient": "SPF 50+ Sunscreen",
           "reason": "Post-inflammatory skin is highly susceptible to sun damage and pigmentation. Daily sun protection is essential.",
           "category": "sun_protection"
+        }
+      ]
+    }
+  },
+  "pore_rules": {
+    "minimal": {
+      "explanation": "Your pores appear minimal and well-maintained.",
+      "educational_note": "Small, barely visible pores indicate good skin health. Continue with your current routine and focus on prevention to maintain pore size over time.",
+      "recommendations": [
+        {
+          "ingredient": "Niacinamide (Vitamin B3) 5%",
+          "reason": "Helps maintain tight pore appearance and regulates oil production to prevent pore enlargement.",
+          "category": "pore_maintenance"
+        },
+        {
+          "ingredient": "Gentle Hydrating Toner",
+          "reason": "Keeps skin hydrated and balanced, preventing overproduction of oil that can stretch pores.",
+          "category": "hydration"
+        }
+      ]
+    },
+    "mild": {
+      "explanation": "Mildly visible pores have been detected, primarily in the T-zone area.",
+      "educational_note": "Slightly visible pores are normal and often genetic. They can be minimized with consistent care focusing on keeping them clean and controlling oil production. Avoid pore strips which can damage surrounding skin.",
+      "recommendations": [
+        {
+          "ingredient": "Salicylic Acid (BHA) 1-2%",
+          "reason": "Oil-soluble acid that penetrates into pores to dissolve sebum buildup and reduce their appearance.",
+          "category": "pore_cleansing"
+        },
+        {
+          "ingredient": "Niacinamide (Vitamin B3) 10%",
+          "reason": "Higher concentration helps visibly reduce pore size by regulating sebum production and improving skin elasticity.",
+          "category": "pore_minimizing"
+        },
+        {
+          "ingredient": "Clay Mask (weekly)",
+          "reason": "Draws out excess oil and impurities from pores, temporarily tightening their appearance.",
+          "category": "deep_cleansing"
+        }
+      ]
+    },
+    "moderate": {
+      "explanation": "Moderately enlarged pores have been detected across noticeable areas of the face.",
+      "educational_note": "Moderately visible pores can be caused by excess sebum, age-related elasticity loss, or sun damage. A combination of exfoliation, oil control, and collagen-supporting ingredients works best. Results typically take 4-8 weeks of consistent use.",
+      "recommendations": [
+        {
+          "ingredient": "Retinol (Vitamin A) 0.25-0.5%",
+          "reason": "Increases cell turnover and boosts collagen production, helping to tighten pores from within over time.",
+          "category": "cell_turnover"
+        },
+        {
+          "ingredient": "Salicylic Acid (BHA) 2%",
+          "reason": "Deep-cleans pores by dissolving oil and dead cell buildup that stretches pore walls.",
+          "category": "exfoliation"
+        },
+        {
+          "ingredient": "Niacinamide (Vitamin B3) 10%",
+          "reason": "Regulates oil production and improves skin texture, making pores appear smaller.",
+          "category": "oil_control"
+        },
+        {
+          "ingredient": "AHA/BHA Chemical Peel (weekly)",
+          "reason": "Regular chemical exfoliation removes surface congestion and promotes smoother skin texture around pores.",
+          "category": "exfoliation"
+        }
+      ]
+    },
+    "severe": {
+      "explanation": "Significantly enlarged pores have been detected. This indicates excess sebum production and possible loss of skin elasticity.",
+      "educational_note": "Severely enlarged pores may benefit from professional treatments like laser therapy, microneedling, or chemical peels in addition to topical care. The recommendations below focus on the best at-home approach. For persistent concerns, consider consulting a dermatologist for in-office treatment options.",
+      "recommendations": [
+        {
+          "ingredient": "Retinol (Vitamin A) 0.5-1%",
+          "reason": "Strong cell turnover agent that rebuilds collagen and tightens pore structure over time. Start low and increase gradually.",
+          "category": "cell_turnover"
+        },
+        {
+          "ingredient": "Salicylic Acid (BHA) 2%",
+          "reason": "Essential for keeping enlarged pores clear of congestion that makes them appear even larger.",
+          "category": "pore_cleansing"
+        },
+        {
+          "ingredient": "Glycolic Acid (AHA) 5-10%",
+          "reason": "Resurfaces the skin and improves texture by removing dead skin cells that accumulate around pore edges.",
+          "category": "resurfacing"
+        },
+        {
+          "ingredient": "Niacinamide (Vitamin B3) 10-15%",
+          "reason": "High-concentration niacinamide normalizes oil flow and visibly tightens pore appearance.",
+          "category": "pore_minimizing"
+        },
+        {
+          "ingredient": "Peptide Serum",
+          "reason": "Supports collagen and elastin production to restore skin firmness and structural support around pores.",
+          "category": "firming"
         }
       ]
     }

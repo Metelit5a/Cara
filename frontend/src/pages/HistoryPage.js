@@ -48,10 +48,10 @@ function HistoryPage() {
             >
               <div>
                 <span
-                  className={`severity-badge severity-${report.severity || 'clear'}`}
+                  className={`severity-badge severity-${report.acne_severity || 'clear'}`}
                   style={{ fontSize: '0.75rem', padding: '3px 10px' }}
                 >
-                  {report.status === 'success' ? report.severity : report.status}
+                  {report.status === 'success' ? report.acne_severity : report.status}
                 </span>
                 <span style={{ marginLeft: '12px', color: 'var(--text-light)', fontSize: '0.85rem' }}>
                   {new Date(report.created_at).toLocaleString()}

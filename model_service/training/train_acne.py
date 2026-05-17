@@ -13,15 +13,20 @@ import os
 import copy
 import shutil
 import argparse
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import datasets, transforms
 from torch.utils.data import DataLoader, random_split
-from pathlib import Path
 import numpy as np
 
 from model_service.acne_model.model import build_model
+from model_service.training.datasets import (
+    FaceCropImageDataset,
+    build_eval_transform,
+    build_train_augment,
+)
 
 
 # ── Dataset Download & Preparation ──
@@ -104,21 +109,10 @@ def download_and_prepare_dataset(output_dir: str = "data/acne04_processed") -> s
 
 
 # ── Transforms ──
+# Use the shared face-crop dataset so training matches inference.
 
-train_transforms = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.RandomHorizontalFlip(),
-    transforms.RandomRotation(10),
-    transforms.ColorJitter(brightness=0.2, contrast=0.2),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-])
-
-val_transforms = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-])
+train_transforms = build_train_augment()
+val_transforms = build_eval_transform()
 
 
 # ── Training loop ──
@@ -198,31 +192,44 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    # Load data
-    train_dir = os.path.join(args.data_dir, "train")
-    test_dir = os.path.join(args.data_dir, "test")
+    # Load data using the SHARED face-crop pipeline (same as inference).
+    train_dir = Path(args.data_dir) / "train"
+    test_dir = Path(args.data_dir) / "test"
 
-    full_dataset = datasets.ImageFolder(train_dir, transform=train_transforms)
-    test_dataset = datasets.ImageFolder(test_dir, transform=val_transforms)
+    class_names = sorted([d.name for d in train_dir.iterdir() if d.is_dir()])
+    class_to_idx = {c: i for i, c in enumerate(class_names)}
+    print(f"Classes: {class_names}")
 
-    # 80/20 train/val split
-    train_size = int(0.8 * len(full_dataset))
-    val_size = len(full_dataset) - train_size
-    train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
+    def collect(root: Path):
+        items = []
+        for cls in class_names:
+            for img in (root / cls).iterdir():
+                if img.suffix.lower() in {".jpg", ".jpeg", ".png", ".bmp"}:
+                    items.append((img, class_to_idx[cls]))
+        return items
 
-    # Apply val transforms to validation subset
-    val_dataset.dataset = copy.deepcopy(full_dataset)
-    val_dataset.dataset.transform = val_transforms
+    all_train = collect(train_dir)
+    test_samples = collect(test_dir)
+
+    # 80/20 train/val split (deterministic)
+    g = torch.Generator().manual_seed(42)
+    perm = torch.randperm(len(all_train), generator=g).tolist()
+    split = int(0.8 * len(all_train))
+    train_samples = [all_train[i] for i in perm[:split]]
+    val_samples = [all_train[i] for i in perm[split:]]
+
+    train_dataset = FaceCropImageDataset(train_samples, transform=train_transforms)
+    val_dataset = FaceCropImageDataset(val_samples, transform=val_transforms)
+    test_dataset = FaceCropImageDataset(test_samples, transform=val_transforms)
 
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 
-    print(f"Classes: {full_dataset.classes}")
     print(f"Train: {len(train_dataset)} | Val: {len(val_dataset)} | Test: {len(test_dataset)}")
 
     # Compute class weights for imbalanced data
-    train_labels = [full_dataset.targets[i] for i in train_dataset.indices]
+    train_labels = [lbl for _, lbl in train_samples]
     from sklearn.utils.class_weight import compute_class_weight
     class_weights = compute_class_weight("balanced", classes=np.unique(train_labels), y=train_labels)
     weights_tensor = torch.tensor(class_weights, dtype=torch.float).to(device)
