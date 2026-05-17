@@ -23,9 +23,10 @@ function HomePage() {
         <h3 style={{ marginBottom: '16px' }}>How It Works</h3>
         <div style={{ display: 'grid', gap: '16px' }}>
           {[
-            { step: '1', title: 'Upload', desc: 'Take or upload a clear photo of your face' },
-            { step: '2', title: 'Analyze', desc: 'Our AI processes the image through multiple analysis stages' },
-            { step: '3', title: 'Results', desc: 'Receive an explainable report with ingredient recommendations' },
+            { step: '1', title: 'Upload', desc: 'Take or upload a clear, front-facing photo of your face. A single face is required.' },
+            { step: '2', title: 'Face Detection', desc: 'We verify exactly one face is detected in your image for accuracy.' },
+            { step: '3', title: 'Analyze', desc: 'Our AI processes the image through preprocessing and AI analysis.' },
+            { step: '4', title: 'Results', desc: 'Receive an explainable report with severity assessment and ingredient recommendations.' },
           ].map((item) => (
             <div key={item.step} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
               <div style={{
