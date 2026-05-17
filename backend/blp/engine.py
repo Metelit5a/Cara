@@ -37,11 +37,26 @@ class BLPEngine:
         self._thresholds = config["confidence_thresholds"]
         self._low_confidence_msg = config["low_confidence_message"]
 
+    def _resolve_acne_severity(self, predictions: Dict[str, ModelPrediction]) -> Optional[ModelPrediction]:
+        """Resolve final acne severity from acne + general_acne models.
+
+        Strategy: use the prediction with higher confidence. If only one
+        model is available, use that one. This gives the BLP a consensus
+        mechanism across the two acne classifiers.
+        """
+        acne_pred = predictions.get("acne")
+        general_pred = predictions.get("general_acne")
+
+        if acne_pred and general_pred:
+            # Use whichever model is more confident
+            return acne_pred if acne_pred.confidence >= general_pred.confidence else general_pred
+        return acne_pred or general_pred
+
     def process(self, predictions: Dict[str, ModelPrediction]) -> BLPResult:
         """Process multiple model predictions into a combined BLP result.
 
         Args:
-            predictions: dict keyed by model name ("acne", "pores")
+            predictions: dict keyed by model name ("acne", "pores", "general_acne")
         """
         recommendations = []
         explanations = []
@@ -49,11 +64,14 @@ class BLPEngine:
 
         acne_severity = None
         pore_severity = None
+        general_acne_severity = None
 
-        # Process acne prediction
-        if "acne" in predictions:
-            acne_pred = predictions["acne"]
-            acne_severity = AcneSeverity(acne_pred.predicted_label)
+        # Resolve acne severity (consensus between acne + general_acne models)
+        resolved_acne = self._resolve_acne_severity(predictions)
+
+        # Process acne prediction (using resolved best prediction)
+        if resolved_acne:
+            acne_severity = AcneSeverity(resolved_acne.predicted_label)
             acne_rule = self._acne_rules[acne_severity.value]
 
             acne_recs = [
@@ -67,7 +85,7 @@ class BLPEngine:
             recommendations.extend(acne_recs)
 
             explanation = acne_rule["explanation"]
-            explanation += self._confidence_note(acne_pred.confidence)
+            explanation += self._confidence_note(resolved_acne.confidence)
             explanations.append(explanation)
             educational_notes.append(acne_rule["educational_note"])
 
@@ -92,6 +110,11 @@ class BLPEngine:
             explanations.append(pore_explanation)
             educational_notes.append(pore_rule["educational_note"])
 
+        # Track general_acne separately for reporting
+        if "general_acne" in predictions:
+            general_pred = predictions["general_acne"]
+            general_acne_severity = AcneSeverity(general_pred.predicted_label)
+
         # Deduplicate recommendations by ingredient
         seen = set()
         unique_recs = []
@@ -106,6 +129,7 @@ class BLPEngine:
         return BLPResult(
             acne_severity=acne_severity or AcneSeverity.CLEAR,
             pore_severity=pore_severity,
+            general_acne_severity=general_acne_severity,
             recommendations=unique_recs,
             explanation=combined_explanation,
             educational_note=combined_educational,

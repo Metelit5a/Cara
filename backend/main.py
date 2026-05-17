@@ -44,6 +44,15 @@ async def lifespan(app: FastAPI):
         logger.warning(f"Pores weights not found at {pores_path} — running without pores model")
         registry.register_pores_model(pores_path)
 
+    # Load general acne model
+    general_path = settings.general_acne_model_weights_path
+    if Path(general_path).exists():
+        registry.register_general_acne_model(general_path)
+        logger.info("General acne severity model loaded successfully")
+    else:
+        logger.warning(f"General acne weights not found at {general_path} — running without general acne model")
+        registry.register_general_acne_model(general_path)
+
     # Ensure storage directories exist
     Path(settings.storage_path, "reports").mkdir(parents=True, exist_ok=True)
 
@@ -80,5 +89,6 @@ async def health_check():
         status="healthy",
         model_loaded=registry.is_loaded("acne"),
         pores_model_loaded=registry.is_loaded("pores"),
+        general_acne_model_loaded=registry.is_loaded("general_acne"),
         version="0.1.0",
     )
