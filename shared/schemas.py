@@ -76,6 +76,14 @@ class AnalysisReport(BaseModel):
 
 # ── API schemas ──
 
+class FaceDetectionResponse(BaseModel):
+    """API response for POST /detect-face."""
+    face_count: int
+    faces_detected: bool
+    message: str
+    bbox: Optional[dict] = None  # {x, y, w, h} for single face
+
+
 class AnalyzeResponse(BaseModel):
     """API response for POST /analyze."""
     report: AnalysisReport
