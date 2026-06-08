@@ -43,6 +43,8 @@ class ReportBuilder:
             explanation=blp_result.explanation,
             recommendations=blp_result.recommendations,
             educational_note=blp_result.educational_note,
+            models_disagree=blp_result.models_disagree,
+            disagreement_message=blp_result.disagreement_message,
         )
 
     @staticmethod

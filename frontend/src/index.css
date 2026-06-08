@@ -272,6 +272,25 @@ a {
   letter-spacing: 0.02em;
 }
 
+.disagreement-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #FFF7E6;
+  border: 1px solid #F6C66B;
+  color: #7B4D12;
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.disagreement-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
 .confidence-fill {
   height: 100%;
   border-radius: 4px;
