@@ -81,6 +81,17 @@ function AnalyzePage() {
           For best results, use a well-lit, front-facing photo of your face.
         </p>
 
+        <div className="photo-tips">
+          <h4 className="photo-tips-title">Tips for the best results</h4>
+          <ul className="photo-tips-list">
+            <li><span className="tip-icon">💡</span> Use bright, even lighting — avoid harsh shadows</li>
+            <li><span className="tip-icon">🙂</span> Face the camera directly, fill the frame with your face</li>
+            <li><span className="tip-icon">👓</span> Remove glasses, hats, and pull back hair</li>
+            <li><span className="tip-icon">🧼</span> Use a clean, makeup-free face for accurate analysis</li>
+            <li><span className="tip-icon">📷</span> Keep the photo sharp and in focus</li>
+          </ul>
+        </div>
+
         {error && (
           <div className="status-message status-error" style={{ marginBottom: '16px' }}>
             {error}
