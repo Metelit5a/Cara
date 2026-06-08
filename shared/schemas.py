@@ -66,6 +66,8 @@ class BLPResult(BaseModel):
     recommendations: List[Recommendation]
     explanation: str
     educational_note: str
+    models_disagree: bool = False
+    disagreement_message: Optional[str] = None
 
 
 # ── Report schemas ──
@@ -86,6 +88,8 @@ class AnalysisReport(BaseModel):
     recommendations: List[Recommendation] = []
     educational_note: Optional[str] = None
     message: Optional[str] = None
+    models_disagree: bool = False
+    disagreement_message: Optional[str] = None
 
 
 # ── API schemas ──

@@ -36,6 +36,10 @@ class BLPEngine:
         self._pore_rules = config["pore_rules"]
         self._thresholds = config["confidence_thresholds"]
         self._low_confidence_msg = config["low_confidence_message"]
+        self._disagreement_msg = config.get(
+            "disagreement_message",
+            "Our models show mixed signals \u2014 consider retaking the photo in better lighting.",
+        )
 
     def _resolve_acne_severity(self, predictions: Dict[str, ModelPrediction]) -> Optional[ModelPrediction]:
         """Resolve final acne severity from acne + general_acne models.
@@ -51,6 +55,26 @@ class BLPEngine:
             # Use whichever model is more confident
             return acne_pred if acne_pred.confidence >= general_pred.confidence else general_pred
         return acne_pred or general_pred
+
+    def _detect_disagreement(self, predictions: Dict[str, ModelPrediction]) -> bool:
+        """Detect a meaningful conflict between the two acne models.
+
+        Returns True when both acne classifiers produced a prediction and
+        their severities differ by two or more levels (e.g. clear vs severe).
+        Adjacent disagreements (clear vs mild) are treated as normal noise.
+        """
+        acne_pred = predictions.get("acne")
+        general_pred = predictions.get("general_acne")
+        if not (acne_pred and general_pred):
+            return False
+
+        order = [s.value for s in AcneSeverity]
+        try:
+            acne_idx = order.index(acne_pred.predicted_label)
+            general_idx = order.index(general_pred.predicted_label)
+        except ValueError:
+            return False
+        return abs(acne_idx - general_idx) >= 2
 
     def process(self, predictions: Dict[str, ModelPrediction]) -> BLPResult:
         """Process multiple model predictions into a combined BLP result.
@@ -126,6 +150,9 @@ class BLPEngine:
         combined_explanation = " ".join(explanations)
         combined_educational = "\n\n".join(educational_notes)
 
+        models_disagree = self._detect_disagreement(predictions)
+        disagreement_message = self._disagreement_msg if models_disagree else None
+
         return BLPResult(
             acne_severity=acne_severity or AcneSeverity.CLEAR,
             pore_severity=pore_severity,
@@ -133,6 +160,8 @@ class BLPEngine:
             recommendations=unique_recs,
             explanation=combined_explanation,
             educational_note=combined_educational,
+            models_disagree=models_disagree,
+            disagreement_message=disagreement_message,
         )
 
     def _confidence_note(self, confidence: float) -> str:

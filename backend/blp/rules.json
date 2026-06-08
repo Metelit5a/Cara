@@ -216,5 +216,6 @@
     "medium": 0.5,
     "low": 0.4
   },
-  "low_confidence_message": "The analysis confidence is below our reliability threshold. The image quality may be insufficient for accurate assessment. Please try again with a clearer, well-lit photo of your face."
+  "low_confidence_message": "The analysis confidence is below our reliability threshold. The image quality may be insufficient for accurate assessment. Please try again with a clearer, well-lit photo of your face.",
+  "disagreement_message": "Our models show mixed signals \u2014 consider retaking the photo in better lighting."
 }

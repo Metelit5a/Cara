@@ -84,6 +84,14 @@ function ResultsPage() {
 
   return (
     <div>
+      {/* Mixed-signal disclaimer when the two acne models disagree */}
+      {report.models_disagree && (
+        <div className="disagreement-banner">
+          <span className="disagreement-icon" aria-hidden="true">⚠️</span>
+          <span>{report.disagreement_message || 'Our models show mixed signals — consider retaking the photo in better lighting.'}</span>
+        </div>
+      )}
+
       {/* Acne Severity & Confidence */}
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
