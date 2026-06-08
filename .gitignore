@@ -19,11 +19,11 @@ env/
 # ========================
 # Model weights & data
 # ========================
-*.pth
-*.pt
+# *.pth
+# *.pt
 *.onnx
-model_service/checkpoints/*.pth
-model_service/checkpoints/*.pt
+# model_service/checkpoints/*.pth
+# model_service/checkpoints/*.pt
 !model_service/checkpoints/.gitkeep
 
 # Training data
