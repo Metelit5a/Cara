@@ -18,6 +18,7 @@ from typing import Dict, Optional
 from shared.schemas import (
     AcneSeverity,
     PoreSeverity,
+    SkinIssueType,
     BLPResult,
     ModelPrediction,
     Recommendation,
@@ -34,6 +35,7 @@ class BLPEngine:
             config = json.load(f)
         self._acne_rules = config["acne_rules"]
         self._pore_rules = config["pore_rules"]
+        self._skin_issue_rules = config.get("skin_issue_rules", {})
         self._thresholds = config["confidence_thresholds"]
         self._low_confidence_msg = config["low_confidence_message"]
 
@@ -56,7 +58,7 @@ class BLPEngine:
         """Process multiple model predictions into a combined BLP result.
 
         Args:
-            predictions: dict keyed by model name ("acne", "pores", "general_acne")
+            predictions: dict keyed by model name ("acne", "pores", "general_acne", "skin_issues")
         """
         recommendations = []
         explanations = []
@@ -65,6 +67,7 @@ class BLPEngine:
         acne_severity = None
         pore_severity = None
         general_acne_severity = None
+        skin_issue_type = None
 
         # Resolve acne severity (consensus between acne + general_acne models)
         resolved_acne = self._resolve_acne_severity(predictions)
@@ -115,6 +118,28 @@ class BLPEngine:
             general_pred = predictions["general_acne"]
             general_acne_severity = AcneSeverity(general_pred.predicted_label)
 
+        # Process skin issues type prediction
+        if "skin_issues" in predictions and self._skin_issue_rules:
+            skin_pred = predictions["skin_issues"]
+            skin_issue_type = SkinIssueType(skin_pred.predicted_label)
+            skin_rule = self._skin_issue_rules.get(skin_issue_type.value)
+
+            if skin_rule:
+                skin_recs = [
+                    Recommendation(
+                        ingredient=r["ingredient"],
+                        reason=r["reason"],
+                        category=r.get("category", ""),
+                    )
+                    for r in skin_rule["recommendations"]
+                ]
+                recommendations.extend(skin_recs)
+
+                skin_explanation = skin_rule["explanation"]
+                skin_explanation += self._confidence_note(skin_pred.confidence)
+                explanations.append(skin_explanation)
+                educational_notes.append(skin_rule["educational_note"])
+
         # Deduplicate recommendations by ingredient
         seen = set()
         unique_recs = []
@@ -130,6 +155,7 @@ class BLPEngine:
             acne_severity=acne_severity or AcneSeverity.CLEAR,
             pore_severity=pore_severity,
             general_acne_severity=general_acne_severity,
+            skin_issue_type=skin_issue_type,
             recommendations=unique_recs,
             explanation=combined_explanation,
             educational_note=combined_educational,

@@ -216,5 +216,122 @@
     "medium": 0.5,
     "low": 0.4
   },
+  "skin_issue_rules": {
+    "acne": {
+      "explanation": "The skin issue type detected is acne — inflammatory or comedonal lesions.",
+      "educational_note": "Acne is caused by clogged pores, bacteria, and excess oil. A consistent routine with targeted active ingredients is key to managing breakouts.",
+      "recommendations": [
+        {
+          "ingredient": "Benzoyl Peroxide 2.5%",
+          "reason": "Targets acne-causing bacteria while being gentler than higher concentrations.",
+          "category": "antimicrobial"
+        },
+        {
+          "ingredient": "Salicylic Acid (BHA) 2%",
+          "reason": "Penetrates pores to dissolve oil and dead skin buildup that triggers breakouts.",
+          "category": "exfoliation"
+        }
+      ]
+    },
+    "blackheads": {
+      "explanation": "Blackheads (open comedones) have been detected as the primary skin concern.",
+      "educational_note": "Blackheads form when pores become clogged with oil and dead skin cells. The dark appearance comes from oxidation, not dirt. Regular chemical exfoliation is the most effective treatment.",
+      "recommendations": [
+        {
+          "ingredient": "Salicylic Acid (BHA) 2%",
+          "reason": "Oil-soluble acid that penetrates deep into pores to dissolve the sebum plugs causing blackheads.",
+          "category": "exfoliation"
+        },
+        {
+          "ingredient": "Retinol 0.3-0.5%",
+          "reason": "Speeds up cell turnover to prevent dead skin from accumulating in pores and forming new blackheads.",
+          "category": "cell_turnover"
+        },
+        {
+          "ingredient": "Oil-Free Moisturizer with Niacinamide",
+          "reason": "Niacinamide regulates sebum production while keeping skin hydrated without clogging pores.",
+          "category": "oil_control"
+        }
+      ]
+    },
+    "dark_spots": {
+      "explanation": "Dark spots (hyperpigmentation) have been detected as the primary skin concern.",
+      "educational_note": "Dark spots are caused by excess melanin production, often triggered by sun exposure, inflammation, or hormonal changes. They respond well to brightening ingredients and diligent sun protection. Results typically take 8-12 weeks.",
+      "recommendations": [
+        {
+          "ingredient": "Vitamin C Serum (L-Ascorbic Acid 10-20%)",
+          "reason": "A potent antioxidant that inhibits melanin production and brightens existing dark spots over time.",
+          "category": "brightening"
+        },
+        {
+          "ingredient": "Alpha Arbutin 2%",
+          "reason": "A gentle melanin inhibitor that fades dark spots without irritation, suitable for all skin types.",
+          "category": "brightening"
+        },
+        {
+          "ingredient": "SPF 50+ Broad-Spectrum Sunscreen",
+          "reason": "Essential to prevent dark spots from darkening further. UV exposure is the primary trigger for hyperpigmentation.",
+          "category": "sun_protection"
+        },
+        {
+          "ingredient": "Niacinamide 5-10%",
+          "reason": "Reduces melanin transfer to skin cells, gradually evening out skin tone.",
+          "category": "brightening"
+        }
+      ]
+    },
+    "pores": {
+      "explanation": "Enlarged or visible pores have been identified as the primary skin concern.",
+      "educational_note": "Pore size is largely genetic, but excess oil, sun damage, and aging can make them more prominent. Consistent exfoliation and oil control help minimize their appearance.",
+      "recommendations": [
+        {
+          "ingredient": "Niacinamide 10%",
+          "reason": "Visibly reduces pore appearance by regulating sebum production and improving skin elasticity.",
+          "category": "pore_minimizing"
+        },
+        {
+          "ingredient": "Salicylic Acid (BHA) 2%",
+          "reason": "Keeps pores clear of congestion that makes them appear larger.",
+          "category": "pore_cleansing"
+        },
+        {
+          "ingredient": "Retinol 0.25%",
+          "reason": "Boosts collagen production to improve skin structure around pores, making them less visible over time.",
+          "category": "cell_turnover"
+        }
+      ]
+    },
+    "wrinkles": {
+      "explanation": "Wrinkles and fine lines have been detected as the primary skin concern.",
+      "educational_note": "Wrinkles are a natural part of aging caused by collagen and elastin breakdown. Sun damage accelerates this process. Retinoids, peptides, and sun protection are the gold standard for anti-aging skincare.",
+      "recommendations": [
+        {
+          "ingredient": "Retinol (Vitamin A) 0.5-1%",
+          "reason": "The gold standard for anti-aging. Stimulates collagen production and accelerates cell turnover to smooth fine lines.",
+          "category": "anti_aging"
+        },
+        {
+          "ingredient": "Peptide Complex Serum",
+          "reason": "Signal peptides stimulate collagen and elastin production, helping to firm and plump aging skin.",
+          "category": "firming"
+        },
+        {
+          "ingredient": "Hyaluronic Acid (multi-weight)",
+          "reason": "Deeply hydrates skin to plump fine lines from within. Multi-weight formulas penetrate multiple skin layers.",
+          "category": "hydration"
+        },
+        {
+          "ingredient": "SPF 50+ Broad-Spectrum Sunscreen",
+          "reason": "Prevents further UV-induced collagen breakdown, the primary external cause of premature wrinkles.",
+          "category": "sun_protection"
+        },
+        {
+          "ingredient": "Vitamin C Serum 15-20%",
+          "reason": "Antioxidant that protects against free radical damage and supports collagen synthesis for firmer skin.",
+          "category": "antioxidant"
+        }
+      ]
+    }
+  },
   "low_confidence_message": "The analysis confidence is below our reliability threshold. The image quality may be insufficient for accurate assessment. Please try again with a clearer, well-lit photo of your face."
 }

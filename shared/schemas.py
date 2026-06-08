@@ -22,6 +22,14 @@ class PoreSeverity(str, Enum):
     SEVERE = "severe"
 
 
+class SkinIssueType(str, Enum):
+    ACNE = "acne"
+    BLACKHEADS = "blackheads"
+    DARK_SPOTS = "dark_spots"
+    PORES = "pores"
+    WRINKLES = "wrinkles"
+
+
 class AnalysisStatus(str, Enum):
     SUCCESS = "success"
     LOW_CONFIDENCE = "low_confidence"
@@ -63,6 +71,7 @@ class BLPResult(BaseModel):
     acne_severity: AcneSeverity
     pore_severity: Optional[PoreSeverity] = None
     general_acne_severity: Optional[AcneSeverity] = None
+    skin_issue_type: Optional[SkinIssueType] = None
     recommendations: List[Recommendation]
     explanation: str
     educational_note: str
@@ -78,9 +87,11 @@ class AnalysisReport(BaseModel):
     acne_severity: Optional[AcneSeverity] = None
     pore_severity: Optional[PoreSeverity] = None
     general_acne_severity: Optional[AcneSeverity] = None
+    skin_issue_type: Optional[SkinIssueType] = None
     confidence: Optional[float] = None
     pore_confidence: Optional[float] = None
     general_acne_confidence: Optional[float] = None
+    skin_issues_confidence: Optional[float] = None
     pore_count: Optional[int] = None
     explanation: Optional[str] = None
     recommendations: List[Recommendation] = []
@@ -103,4 +114,5 @@ class HealthResponse(BaseModel):
     model_loaded: bool
     pores_model_loaded: bool = False
     general_acne_model_loaded: bool = False
+    skin_issues_model_loaded: bool = False
     version: str = "0.1.0"

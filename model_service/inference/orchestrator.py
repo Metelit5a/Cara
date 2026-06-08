@@ -20,6 +20,11 @@ from model_service.acne_model.general_model import (
 )
 from model_service.pores_model.model import PoreSeverityModel, PORE_CLASSES
 from model_service.pores_model.model import NUM_CLASSES as PORE_NUM_CLASSES
+from model_service.skin_issues_model.model import (
+    SkinIssuesModel,
+    SKIN_ISSUE_CLASSES,
+    NUM_CLASSES as SKIN_ISSUES_NUM_CLASSES,
+)
 
 
 class ModelRegistry:
@@ -77,6 +82,20 @@ class ModelRegistry:
         model = model.to(self._device)
         model.eval()
         self._models["general_acne"] = model
+        return True
+
+    def register_skin_issues_model(self, weights_path: Optional[str] = None) -> bool:
+        """Load and register the skin issues type classification model."""
+        model = SkinIssuesModel(num_classes=SKIN_ISSUES_NUM_CLASSES, pretrained=False)
+
+        path = weights_path or settings.skin_issues_model_weights_path
+        if Path(path).exists():
+            state_dict = torch.load(path, map_location=self._device, weights_only=True)
+            model.load_state_dict(state_dict)
+
+        model = model.to(self._device)
+        model.eval()
+        self._models["skin_issues"] = model
         return True
 
     def is_loaded(self, model_name: str) -> bool:
@@ -169,6 +188,28 @@ class InferenceOrchestrator:
             all_probabilities=[round(p, 4) for p in probabilities[0].tolist()],
         )
 
+    def predict_skin_issues(self, image_tensor: torch.Tensor) -> ModelPrediction:
+        """Run skin issue type prediction on a preprocessed image tensor."""
+        model = self.registry.get_model("skin_issues")
+        if model is None:
+            raise RuntimeError("Skin issues model not loaded")
+
+        device = self.registry.device
+        input_tensor = image_tensor.unsqueeze(0).to(device)
+        with torch.no_grad():
+            outputs = model(input_tensor)
+            probabilities = F.softmax(outputs, dim=1)
+            confidence, predicted = torch.max(probabilities, 1)
+
+        predicted_class = predicted.item()
+        return ModelPrediction(
+            model_name="skin_issues_type",
+            predicted_class=predicted_class,
+            predicted_label=SKIN_ISSUE_CLASSES[predicted_class],
+            confidence=round(confidence.item(), 4),
+            all_probabilities=[round(p, 4) for p in probabilities[0].tolist()],
+        )
+
     def predict_all(self, image_tensor: torch.Tensor) -> Dict[str, ModelPrediction]:
         """Run all registered models and return predictions keyed by model name.
 
@@ -184,6 +225,9 @@ class InferenceOrchestrator:
 
         if self.registry.is_loaded("general_acne"):
             results["general_acne"] = self.predict_general_acne(image_tensor)
+
+        if self.registry.is_loaded("skin_issues"):
+            results["skin_issues"] = self.predict_skin_issues(image_tensor)
 
         return results
 

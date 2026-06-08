@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     # Model - General Acne (Roboflow COCO, lesion-count severity)
     general_acne_model_weights_path: str = "model_service/checkpoints/general_acne_model_best.pth"
 
+    # Model - Skin Issues (type classification)
+    skin_issues_model_weights_path: str = "model_service/checkpoints/skin_issues_model_best.pth"
+
     # Storage
     storage_backend: str = "json"  # "json" or "mongodb"
     storage_path: str = "storage"
