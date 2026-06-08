@@ -262,6 +262,16 @@ a {
   margin-top: 4px;
 }
 
+.confidence-level-badge {
+  display: inline-block;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 3px 12px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
 .confidence-fill {
   height: 100%;
   border-radius: 4px;

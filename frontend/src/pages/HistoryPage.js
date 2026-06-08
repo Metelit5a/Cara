@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listReports } from '../api';
 
+function confidenceLabel(confidence) {
+  if (!confidence) return '\u2014';
+  if (confidence >= 0.6) return 'High';
+  if (confidence >= 0.35) return 'Medium';
+  return 'Low';
+}
+
 function HistoryPage() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +65,7 @@ function HistoryPage() {
                 </span>
               </div>
               <span style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>
-                {report.confidence ? `${Math.round(report.confidence * 100)}%` : '—'}
+                {confidenceLabel(report.confidence)}
               </span>
             </div>
           ))
