@@ -13,9 +13,9 @@
 
 ## About
 
-**CARA** is a production-style proof-of-concept web application that analyzes facial skin images and provides an acne-severity assessment along with personalized, rule-based skincare recommendations.
+**CARA** is a production-grade web application that analyzes facial skin images and provides a comprehensive skin report with personalized, evidence-based skincare recommendations.
 
-A user uploads a photo, the system detects their face, classifies acne severity (Clear / Mild / Moderate / Severe), and returns an actionable report — all within seconds.
+A user uploads a photo, the system runs 3 deep learning models in parallel (acne severity, skin type, skin issues), combines their outputs through a rule-based engine, and returns an actionable report — all within seconds.
 
 > **Disclaimer:** CARA is **not** a medical diagnostic tool. It provides cosmetic skincare insights and educational ingredient recommendations only.
 
@@ -23,9 +23,10 @@ A user uploads a photo, the system detects their face, classifies acne severity 
 
 | Feature | Description |
 |---------|-------------|
-| **Acne Severity Classification** | EfficientNet-B0 fine-tuned on the ACNE04 dataset with ~70% test accuracy |
-| **Face Detection & Preprocessing** | OpenCV Haar Cascade face detection with CLAHE brightness normalization |
-| **Recommendation Engine** | Rule-based BLP engine mapping severity to actionable skincare advice |
+| **Acne Severity Classification** | EfficientNetB0 — clear/mild/moderate/severe (69.6% test accuracy) |
+| **Skin Type Detection** | EfficientNetB0 — oily/dry/normal/combination (77.8% test accuracy) |
+| **Skin Issues Detection** | EfficientNetB0 — blackheads/dark spots/pores/wrinkles/healthy (98.3% test accuracy) |
+| **Recommendation Engine** | Rule-based BLP engine mapping predictions to evidence-based skincare advice |
 | **Report Persistence** | Full analysis history with JSON storage (MongoDB-ready) |
 | **Responsive UI** | Mobile-first React frontend with image upload, results, and history pages |
 
@@ -146,17 +147,59 @@ copy .env.example .env           # Windows
 # cp .env.example .env           # Linux / macOS
 ```
 
-### 3. Train the Model (or use pretrained weights)
+### 3. Train the Models (or use pretrained weights)
 
 ```bash
-# Downloads ACNE04 from Kaggle, prepares dataset, and trains
-python -m model_service.training.train_acne
+# Train all 3 models from scratch
+python -m model_service.training.train --model all
 
-# If dataset is already downloaded, skip the download step:
-python -m model_service.training.train_acne --skip-download
+# Or train individually
+python -m model_service.training.train --model acne
+python -m model_service.training.train --model skin_type
+python -m model_service.training.train --model skin_issues
+
+# Resume training from checkpoint (e.g., on GPU)
+python -m model_service.training.train --model acne --resume --epochs 30
 ```
 
-The trained model is saved to `model_service/checkpoints/acne_model_best.pth`.
+Trained models are saved to `model_service/checkpoints/`.
+See `model_service/training/README.md` for full training documentation.
+
+---
+
+## Testing
+
+> **⚠️ IMPORTANT: Run all tests before pushing to main.**
+>
+> The test suite includes algorithm accuracy tests that catch model regressions.
+> A passing test suite means the pipeline produces correct predictions.
+
+```bash
+# Run the full test suite (56 tests)
+python -m pytest tests/ -v
+
+# Quick check (just logic tests, no model inference)
+python -m pytest tests/test_blp.py tests/test_api.py -v
+
+# Model accuracy tests only (requires checkpoints + data)
+python -m pytest tests/test_model_accuracy.py -v
+
+# End-to-end pipeline tests
+python -m pytest tests/test_e2e_pipeline.py -v
+```
+
+### Test Categories
+
+| File | Tests | What it verifies |
+|------|:-----:|------------------|
+| `test_blp.py` | 18 | BLP rule engine logic, all rules reachable |
+| `test_api.py` | 4 | API endpoints, request/response format |
+| `test_integration.py` | 8 | Component connections, report building |
+| `test_model_accuracy.py` | 11 | Per-model predictions on ground truth images |
+| `test_e2e_pipeline.py` | 10 | Full image→report pipeline with real images |
+
+If any `test_model_accuracy` or `test_e2e_pipeline` test fails after a code change,
+**you have introduced a regression** — do not push until fixed.
 
 ### 4. Start the Backend
 

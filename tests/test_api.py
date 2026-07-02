@@ -1,62 +1,41 @@
-"""Tests for the FastAPI endpoints."""
+"""Tests for the API endpoints."""
 
 import pytest
-from httpx import AsyncClient, ASGITransport
+from fastapi.testclient import TestClient
 from PIL import Image
-import numpy as np
 import io
 
-
-@pytest.fixture
-def test_app():
-    from backend.main import app
-    return app
+from backend.main import app
 
 
 @pytest.fixture
-def sample_jpeg():
-    img = Image.fromarray(np.random.randint(0, 255, (224, 224, 3), dtype=np.uint8))
+def client():
+    return TestClient(app)
+
+
+@pytest.fixture
+def sample_jpeg_bytes():
+    """Generate a valid JPEG image for testing."""
+    img = Image.new("RGB", (300, 300), color=(200, 150, 130))
     buf = io.BytesIO()
     img.save(buf, format="JPEG")
-    buf.seek(0)
-    return buf
+    return buf.getvalue()
 
 
-async def test_health_endpoint(test_app):
-    transport = ASGITransport(app=test_app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get("/health")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "healthy"
-        assert "model_loaded" in data
-        assert "version" in data
+@pytest.fixture
+def sample_png_bytes():
+    """Generate a valid PNG image."""
+    img = Image.new("RGB", (300, 300), color=(200, 150, 130))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
 
 
-async def test_analyze_no_file(test_app):
-    transport = ASGITransport(app=test_app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.post("/api/v1/analyze")
-        assert response.status_code == 422  # Missing required file
-
-
-async def test_analyze_wrong_content_type(test_app):
-    transport = ASGITransport(app=test_app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.post(
+class TestAnalyzeEndpoint:
+    def test_analyze_accepts_jpeg(self, client, sample_jpeg_bytes):
+        response = client.post(
             "/api/v1/analyze",
-            files={"file": ("test.txt", b"hello", "text/plain")},
-        )
-        assert response.status_code == 400
-
-
-async def test_analyze_valid_image(test_app, sample_jpeg):
-    """A valid JPEG should get a response (may be no_face_detected for random noise)."""
-    transport = ASGITransport(app=test_app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.post(
-            "/api/v1/analyze",
-            files={"file": ("test.jpg", sample_jpeg, "image/jpeg")},
+            files={"file": ("face.jpg", sample_jpeg_bytes, "image/jpeg")},
         )
         assert response.status_code == 200
         data = response.json()
@@ -64,17 +43,57 @@ async def test_analyze_valid_image(test_app, sample_jpeg):
         assert "id" in data["report"]
         assert "status" in data["report"]
 
+    def test_analyze_accepts_png(self, client, sample_png_bytes):
+        response = client.post(
+            "/api/v1/analyze",
+            files={"file": ("face.png", sample_png_bytes, "image/png")},
+        )
+        assert response.status_code == 200
 
-async def test_report_not_found(test_app):
-    transport = ASGITransport(app=test_app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get("/api/v1/report/nonexistent-id")
+    def test_analyze_rejects_invalid_content_type(self, client):
+        response = client.post(
+            "/api/v1/analyze",
+            files={"file": ("file.txt", b"not an image", "text/plain")},
+        )
+        assert response.status_code == 400
+        assert "Unsupported file type" in response.json()["detail"]
+
+    def test_analyze_rejects_empty_file(self, client):
+        response = client.post(
+            "/api/v1/analyze",
+            files={"file": ("face.jpg", b"", "image/jpeg")},
+        )
+        assert response.status_code == 400
+        assert "Empty file" in response.json()["detail"]
+
+    def test_analyze_report_has_correct_structure(self, client, sample_jpeg_bytes):
+        response = client.post(
+            "/api/v1/analyze",
+            files={"file": ("face.jpg", sample_jpeg_bytes, "image/jpeg")},
+        )
+        report = response.json()["report"]
+        assert "id" in report
+        assert "status" in report
+        assert "created_at" in report
+        assert report["status"] in ["success", "low_confidence", "error", "no_face_detected"]
+
+
+class TestHealthEndpoint:
+    def test_health_returns_ok(self, client):
+        response = client.get("/health")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "healthy"
+        assert "models_loaded" in data
+        assert "version" in data
+
+
+class TestReportEndpoints:
+    def test_get_nonexistent_report_returns_404(self, client):
+        response = client.get("/api/v1/report/nonexistent-id")
         assert response.status_code == 404
 
-
-async def test_list_reports(test_app):
-    transport = ASGITransport(app=test_app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get("/api/v1/reports")
+    def test_list_reports_returns_list(self, client):
+        response = client.get("/api/v1/reports")
         assert response.status_code == 200
         assert isinstance(response.json(), list)

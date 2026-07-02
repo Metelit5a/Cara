@@ -1,207 +1,172 @@
 """
 Inference Orchestrator
 
-Manages model loading and prediction for all registered models.
-Supports acne severity (local PyTorch) and pores severity (local PyTorch).
+Manages model loading and prediction for all three models:
+  1. Acne Severity (clear/mild/moderate/severe)
+  2. Skin Type (oily/dry/normal/combination)
+  3. Skin Issues (healthy/blackheads/dark_spots/pores/wrinkles)
 """
 
-import torch
-import torch.nn.functional as F
+import logging
 from pathlib import Path
 from typing import Dict, Optional
 
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torchvision import transforms
+
 from shared.config import settings
-from shared.schemas import ModelPrediction, AnalysisStatus
-from model_service.acne_model.model import AcneSeverityModel, ACNE_CLASSES, NUM_CLASSES
-from model_service.acne_model.general_model import (
-    GeneralAcneModel,
-    GENERAL_ACNE_CLASSES,
-    NUM_CLASSES as GENERAL_ACNE_NUM_CLASSES,
-)
-from model_service.pores_model.model import PoreSeverityModel, PORE_CLASSES
-from model_service.pores_model.model import NUM_CLASSES as PORE_NUM_CLASSES
+from shared.schemas import ModelPrediction
+
+logger = logging.getLogger(__name__)
+
+# Class mappings (alphabetical order — must match training)
+ACNE_CLASSES = {0: "clear", 1: "mild", 2: "moderate", 3: "severe"}
+SKIN_TYPE_CLASSES = {0: "combination", 1: "dry", 2: "normal", 3: "oily"}
+SKIN_ISSUE_CLASSES = {0: "blackheads", 1: "dark_spots", 2: "healthy", 3: "pores", 4: "wrinkles"}
+
+# ImageNet normalization
+IMAGENET_MEAN = [0.485, 0.456, 0.406]
+IMAGENET_STD = [0.229, 0.224, 0.225]
 
 
-class ModelRegistry:
-    """Registry of available model services.
+def _build_efficientnet(num_classes: int) -> nn.Module:
+    """Build EfficientNetB0 with custom classifier head (matching training)."""
+    from torchvision.models import efficientnet_b0
 
-    Each model is loaded once and cached. New models can be registered
-    without modifying existing code.
-    """
+    model = efficientnet_b0(weights=None)
+    in_features = model.classifier[1].in_features
+    model.classifier = nn.Sequential(
+        nn.Dropout(p=0.3, inplace=True),
+        nn.Linear(in_features, num_classes),
+    )
+    return model
+
+
+def _load_model(num_classes: int, weights_path: str, device: torch.device) -> Optional[nn.Module]:
+    """Load a model from checkpoint. Returns None if weights don't exist or are incompatible."""
+    path = Path(weights_path)
+    if not path.exists():
+        logger.warning(f"Model weights not found: {path}")
+        return None
+
+    model = _build_efficientnet(num_classes)
+    try:
+        state_dict = torch.load(str(path), map_location=device, weights_only=True)
+        model.load_state_dict(state_dict)
+    except RuntimeError as e:
+        logger.warning(f"Incompatible checkpoint {path.name}: {e}. Skipping.")
+        return None
+
+    model = model.to(device)
+    model.eval()
+    logger.info(f"Loaded model: {path.name} ({num_classes} classes)")
+    return model
+
+
+class InferenceOrchestrator:
+    """Runs inference across all registered models."""
 
     def __init__(self):
-        self._models: Dict[str, torch.nn.Module] = {}
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self._models: Dict[str, nn.Module] = {}
+        self._class_maps: Dict[str, Dict[int, str]] = {}
+        self.confidence_threshold = settings.confidence_threshold
 
-    @property
-    def device(self) -> torch.device:
-        return self._device
+        # Preprocessing transform (matches training eval transform)
+        self._transform = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
+        ])
 
-    def register_acne_model(self, weights_path: Optional[str] = None) -> bool:
-        """Load and register the acne severity model."""
-        model = AcneSeverityModel(num_classes=NUM_CLASSES, pretrained=False)
+        self._load_all_models()
 
-        path = weights_path or settings.model_weights_path
-        if Path(path).exists():
-            state_dict = torch.load(path, map_location=self._device, weights_only=True)
-            model.load_state_dict(state_dict)
+    def _load_all_models(self):
+        """Load all available model checkpoints."""
+        model_configs = [
+            ("acne", 4, settings.model_weights_path, ACNE_CLASSES),
+            ("skin_type", 4, settings.skin_type_model_weights_path, SKIN_TYPE_CLASSES),
+            ("skin_issues", 5, settings.skin_issues_model_weights_path, SKIN_ISSUE_CLASSES),
+        ]
 
-        model = model.to(self._device)
-        model.eval()
-        self._models["acne"] = model
-        return True
+        for name, num_classes, path, class_map in model_configs:
+            model = _load_model(num_classes, path, self._device)
+            if model is not None:
+                self._models[name] = model
+                self._class_maps[name] = class_map
 
-    def register_pores_model(self, weights_path: Optional[str] = None) -> bool:
-        """Load and register the pores severity model."""
-        model = PoreSeverityModel(num_classes=PORE_NUM_CLASSES, pretrained=False)
-
-        path = weights_path or settings.pores_model_weights_path
-        if Path(path).exists():
-            state_dict = torch.load(path, map_location=self._device, weights_only=True)
-            model.load_state_dict(state_dict)
-
-        model = model.to(self._device)
-        model.eval()
-        self._models["pores"] = model
-        return True
-
-    def register_general_acne_model(self, weights_path: Optional[str] = None) -> bool:
-        """Load and register the robust general-acne severity model."""
-        model = GeneralAcneModel(num_classes=GENERAL_ACNE_NUM_CLASSES, pretrained=False)
-
-        path = weights_path or settings.general_acne_model_weights_path
-        if Path(path).exists():
-            state_dict = torch.load(path, map_location=self._device, weights_only=True)
-            model.load_state_dict(state_dict)
-
-        model = model.to(self._device)
-        model.eval()
-        self._models["general_acne"] = model
-        return True
-
-    def is_loaded(self, model_name: str) -> bool:
-        return model_name in self._models
-
-    def get_model(self, model_name: str) -> Optional[torch.nn.Module]:
-        return self._models.get(model_name)
+        logger.info(f"Models loaded: {list(self._models.keys())}")
 
     @property
     def loaded_models(self) -> list:
         return list(self._models.keys())
 
+    def predict(self, model_name: str, image_tensor: torch.Tensor) -> Optional[ModelPrediction]:
+        """Run inference on a single model."""
+        if model_name not in self._models:
+            return None
 
-class InferenceOrchestrator:
-    """Runs inference across registered models and applies confidence thresholding."""
-
-    def __init__(self, registry: ModelRegistry):
-        self.registry = registry
-        self.confidence_threshold = settings.confidence_threshold
-
-    def predict_acne(self, image_tensor: torch.Tensor) -> ModelPrediction:
-        """Run acne severity prediction on a preprocessed image tensor."""
-        model = self.registry.get_model("acne")
-        if model is None:
-            raise RuntimeError("Acne model not loaded")
-
-        device = self.registry.device
-        input_tensor = image_tensor.unsqueeze(0).to(device)
+        model = self._models[model_name]
+        class_map = self._class_maps[model_name]
 
         with torch.no_grad():
-            outputs = model(input_tensor)
-            probabilities = F.softmax(outputs, dim=1)
-            confidence, predicted = torch.max(probabilities, 1)
+            image_tensor = image_tensor.to(self._device)
+            if image_tensor.dim() == 3:
+                image_tensor = image_tensor.unsqueeze(0)
 
-        predicted_class = predicted.item()
-        conf = confidence.item()
+            logits = model(image_tensor)
+            probs = F.softmax(logits, dim=1)
+            confidence, predicted_class = torch.max(probs, 1)
+
+            pred_idx = predicted_class.item()
+            conf = confidence.item()
+            all_probs = [round(p, 4) for p in probs.squeeze().cpu().tolist()]
 
         return ModelPrediction(
-            model_name="acne_severity",
-            predicted_class=predicted_class,
-            predicted_label=ACNE_CLASSES[predicted_class],
+            model_name=model_name,
+            predicted_class=pred_idx,
+            predicted_label=class_map[pred_idx],
             confidence=round(conf, 4),
-            all_probabilities=[round(p, 4) for p in probabilities[0].tolist()],
-        )
-
-    def predict_pores(self, image_tensor: torch.Tensor) -> ModelPrediction:
-        """Run pore severity prediction on a preprocessed image tensor."""
-        model = self.registry.get_model("pores")
-        if model is None:
-            raise RuntimeError("Pores model not loaded")
-
-        device = self.registry.device
-        input_tensor = image_tensor.unsqueeze(0).to(device)
-
-        with torch.no_grad():
-            outputs = model(input_tensor)
-            probabilities = F.softmax(outputs, dim=1)
-            confidence, predicted = torch.max(probabilities, 1)
-
-        predicted_class = predicted.item()
-        conf = confidence.item()
-
-        return ModelPrediction(
-            model_name="pores_severity",
-            predicted_class=predicted_class,
-            predicted_label=PORE_CLASSES[predicted_class],
-            confidence=round(conf, 4),
-            all_probabilities=[round(p, 4) for p in probabilities[0].tolist()],
-        )
-
-    def predict_general_acne(self, image_tensor: torch.Tensor) -> ModelPrediction:
-        """Run general-acne severity prediction on a preprocessed image tensor."""
-        model = self.registry.get_model("general_acne")
-        if model is None:
-            raise RuntimeError("General acne model not loaded")
-
-        device = self.registry.device
-        input_tensor = image_tensor.unsqueeze(0).to(device)
-        with torch.no_grad():
-            outputs = model(input_tensor)
-            probabilities = F.softmax(outputs, dim=1)
-            confidence, predicted = torch.max(probabilities, 1)
-
-        predicted_class = predicted.item()
-        return ModelPrediction(
-            model_name="general_acne_severity",
-            predicted_class=predicted_class,
-            predicted_label=GENERAL_ACNE_CLASSES[predicted_class],
-            confidence=round(confidence.item(), 4),
-            all_probabilities=[round(p, 4) for p in probabilities[0].tolist()],
+            all_probabilities=all_probs,
         )
 
     def predict_all(self, image_tensor: torch.Tensor) -> Dict[str, ModelPrediction]:
-        """Run all registered models and return predictions keyed by model name.
+        """Run inference on all loaded models.
 
-        All models use the same preprocessed tensor.
+        Args:
+            image_tensor: Preprocessed tensor [1, 3, 224, 224] or [3, 224, 224]
+
+        Returns:
+            Dict mapping model name -> ModelPrediction
         """
-        results = {}
+        predictions = {}
+        for model_name in self._models:
+            pred = self.predict(model_name, image_tensor)
+            if pred is not None:
+                predictions[model_name] = pred
+                logger.info(
+                    f"  {model_name}: {pred.predicted_label} "
+                    f"(conf={pred.confidence:.3f})"
+                )
+        return predictions
 
-        if self.registry.is_loaded("acne"):
-            results["acne"] = self.predict_acne(image_tensor)
-
-        if self.registry.is_loaded("pores"):
-            results["pores"] = self.predict_pores(image_tensor)
-
-        if self.registry.is_loaded("general_acne"):
-            results["general_acne"] = self.predict_general_acne(image_tensor)
-
-        return results
+    @property
+    def transform(self):
+        """The image transform to apply before prediction."""
+        return self._transform
 
 
-# Module-level singletons
-_registry: Optional[ModelRegistry] = None
+# ── Singleton ────────────────────────────────────────────────────────────────
+
 _orchestrator: Optional[InferenceOrchestrator] = None
 
 
-def get_registry() -> ModelRegistry:
-    global _registry
-    if _registry is None:
-        _registry = ModelRegistry()
-    return _registry
-
-
 def get_orchestrator() -> InferenceOrchestrator:
+    """Get or create the singleton orchestrator instance."""
     global _orchestrator
     if _orchestrator is None:
-        _orchestrator = InferenceOrchestrator(get_registry())
+        _orchestrator = InferenceOrchestrator()
     return _orchestrator

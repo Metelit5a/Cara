@@ -65,7 +65,7 @@ function HistoryPage() {
                 </span>
               </div>
               <span style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>
-                {confidenceLabel(report.confidence)}
+                {confidenceLabel(report.acne_confidence)}
               </span>
             </div>
           ))

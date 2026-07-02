@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from shared.config import settings
 from shared.schemas import HealthResponse
 from backend.api.routes import router as analysis_router
-from model_service.inference.orchestrator import get_registry
+from model_service.inference.orchestrator import get_orchestrator
 
 logger = logging.getLogger("cara")
 
@@ -22,41 +22,14 @@ logger = logging.getLogger("cara")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup/shutdown lifecycle."""
-    # Startup: load models
+    # Startup: load models (orchestrator handles loading)
     logger.info("Loading models...")
-    registry = get_registry()
-
-    # Load acne model
-    weights_path = settings.model_weights_path
-    if Path(weights_path).exists():
-        registry.register_acne_model(weights_path)
-        logger.info("Acne severity model loaded successfully")
-    else:
-        logger.warning(f"Model weights not found at {weights_path} — running without model")
-        registry.register_acne_model(weights_path)
-
-    # Load pores model
-    pores_path = settings.pores_model_weights_path
-    if Path(pores_path).exists():
-        registry.register_pores_model(pores_path)
-        logger.info("Pores severity model loaded successfully")
-    else:
-        logger.warning(f"Pores weights not found at {pores_path} — running without pores model")
-        registry.register_pores_model(pores_path)
-
-    # Load general acne model
-    general_path = settings.general_acne_model_weights_path
-    if Path(general_path).exists():
-        registry.register_general_acne_model(general_path)
-        logger.info("General acne severity model loaded successfully")
-    else:
-        logger.warning(f"General acne weights not found at {general_path} — running without general acne model")
-        registry.register_general_acne_model(general_path)
+    orchestrator = get_orchestrator()
 
     # Ensure storage directories exist
     Path(settings.storage_path, "reports").mkdir(parents=True, exist_ok=True)
 
-    logger.info(f"Cara backend ready — models loaded: {registry.loaded_models}")
+    logger.info(f"Cara backend ready — models loaded: {orchestrator.loaded_models}")
     yield
     # Shutdown
     logger.info("Shutting down Cara backend")
@@ -65,7 +38,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Cara - AI Skincare Analysis",
     description="Explainable cosmetic skincare analysis API. NOT a medical diagnosis system.",
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
 )
 
@@ -84,11 +57,9 @@ app.include_router(analysis_router)
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
-    registry = get_registry()
+    orchestrator = get_orchestrator()
     return HealthResponse(
         status="healthy",
-        model_loaded=registry.is_loaded("acne"),
-        pores_model_loaded=registry.is_loaded("pores"),
-        general_acne_model_loaded=registry.is_loaded("general_acne"),
-        version="0.1.0",
+        models_loaded=orchestrator.loaded_models,
+        version="0.2.0",
     )

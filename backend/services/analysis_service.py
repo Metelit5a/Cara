@@ -2,20 +2,26 @@
 Analysis Service
 
 Orchestrates the full analysis pipeline:
-  image bytes → preprocessing → model inference (acne + pores) → BLP → report → storage
+  image bytes → face-crop preprocessing → model inference (3 models)
+  → BLP → report → storage
 
-Both models run on the same image. The BLP engine waits for both
-results before generating a combined report.
+All three models run on the same face-cropped image. Face-cropping is
+mandatory: without it the models see too much background/hair/clothing
+that they were never trained on, and hallucinate confidently-wrong
+labels (see tests/test_real_world_regression.py). If no face is
+detected we return a NO_FACE status so the user can retake the photo.
 """
 
-from typing import List, Optional
+import logging
 
-from shared.schemas import AnalysisReport
-from model_service.preprocessing.pipeline import get_pipeline
+from shared.schemas import AnalysisReport, AnalysisStatus
 from model_service.inference.orchestrator import get_orchestrator
+from model_service.preprocessing.pipeline import get_pipeline
 from backend.blp.engine import get_blp_engine
 from backend.report_generation.builder import ReportBuilder
 from backend.database.repository import StorageRepository
+
+logger = logging.getLogger(__name__)
 
 
 class AnalysisService:
@@ -27,50 +33,55 @@ class AnalysisService:
     async def analyze_image(self, image_bytes: bytes) -> AnalysisReport:
         """Run the full analysis pipeline on an uploaded image."""
 
-        # Step 1: Preprocessing (for acne model - needs tensor)
+        # Step 1: Face-crop preprocessing (produces a 224x224 face tensor)
         pipeline = get_pipeline()
-        preprocess_result, tensor = pipeline.process(image_bytes)
+        preprocess_result, image_tensor = pipeline.process(image_bytes)
 
         if not preprocess_result.success:
-            if not preprocess_result.face_detected:
+            # "No face detected" is user-actionable (retake the photo).
+            # "Invalid image data" is a real error (corrupt/unsupported file).
+            if preprocess_result.message.startswith("No face"):
+                logger.info(f"Face detection failed: {preprocess_result.message}")
                 report = ReportBuilder.build_no_face_report(preprocess_result.message)
             else:
+                logger.error(f"Preprocessing failed: {preprocess_result.message}")
                 report = ReportBuilder.build_error_report(preprocess_result.message)
             await self.repository.save_report(report)
             return report
 
-        # Step 2: Run both models (same tensor for both)
+        # Step 2: Run all models on the cropped face tensor
         orchestrator = get_orchestrator()
         try:
-            predictions = orchestrator.predict_all(tensor)
+            predictions = orchestrator.predict_all(image_tensor)
         except RuntimeError as e:
+            logger.error(f"Model inference failed: {e}")
             report = ReportBuilder.build_error_report(str(e))
             await self.repository.save_report(report)
             return report
 
-        # Step 3: Confidence check — at least one acne model must pass threshold
+        if not predictions:
+            report = ReportBuilder.build_error_report("No models are loaded. Please check model checkpoints.")
+            await self.repository.save_report(report)
+            return report
+
+        # Step 3: Check confidence — at least one model must pass threshold
         blp_engine = get_blp_engine()
-        acne_pred = predictions.get("acne")
-        general_acne_pred = predictions.get("general_acne")
+        any_confident = any(
+            pred.confidence >= blp_engine.confidence_threshold
+            for pred in predictions.values()
+        )
 
-        # Accept if ANY acne model passes the confidence threshold
-        acne_conf_ok = acne_pred and acne_pred.confidence >= blp_engine.confidence_threshold
-        general_conf_ok = general_acne_pred and general_acne_pred.confidence >= blp_engine.confidence_threshold
+        if not any_confident:
+            report = ReportBuilder.build_low_confidence_report(
+                predictions, blp_engine.low_confidence_message
+            )
+            await self.repository.save_report(report)
+            return report
 
-        if not acne_conf_ok and not general_conf_ok:
-            # Neither model has sufficient confidence
-            best_pred = acne_pred or general_acne_pred
-            if best_pred:
-                report = ReportBuilder.build_low_confidence_report(
-                    best_pred, blp_engine.low_confidence_message
-                )
-                await self.repository.save_report(report)
-                return report
-
-        # Step 4: Business Logic Processing (receives all predictions)
+        # Step 4: Business Logic Processing
         blp_result = blp_engine.process(predictions)
 
-        # Step 5: Report generation
+        # Step 5: Build report
         report = ReportBuilder.build_success_report(predictions, blp_result)
 
         # Step 6: Persist
@@ -78,8 +89,10 @@ class AnalysisService:
 
         return report
 
-    async def get_report(self, report_id: str) -> Optional[AnalysisReport]:
+    async def get_report(self, report_id: str):
+        """Retrieve a saved report by ID."""
         return await self.repository.get_report(report_id)
 
-    async def list_reports(self, limit: int = 50) -> List[AnalysisReport]:
-        return await self.repository.list_reports(limit)
+    async def list_reports(self, limit: int = 50):
+        """List recent reports."""
+        return await self.repository.list_reports(limit=limit)

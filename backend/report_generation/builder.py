@@ -2,12 +2,12 @@
 Report Builder
 
 Assembles the final AnalysisReport from BLP results and model predictions.
-Supports multi-model pipeline (acne + pores).
+Supports the 3-model pipeline (acne + skin_type + skin_issues).
 """
 
 import uuid
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict
 
 from shared.schemas import (
     AnalysisReport,
@@ -26,39 +26,41 @@ class ReportBuilder:
         blp_result: BLPResult,
     ) -> AnalysisReport:
         acne_pred = predictions.get("acne")
-        pore_pred = predictions.get("pores")
-        general_acne_pred = predictions.get("general_acne")
+        skin_type_pred = predictions.get("skin_type")
+        skin_issue_pred = predictions.get("skin_issues")
 
         return AnalysisReport(
             id=str(uuid.uuid4()),
             created_at=datetime.utcnow(),
             status=AnalysisStatus.SUCCESS,
             acne_severity=blp_result.acne_severity,
-            pore_severity=blp_result.pore_severity,
-            general_acne_severity=blp_result.general_acne_severity,
-            confidence=acne_pred.confidence if acne_pred else None,
-            pore_confidence=pore_pred.confidence if pore_pred else None,
-            general_acne_confidence=general_acne_pred.confidence if general_acne_pred else None,
-            pore_count=pore_pred.predicted_class if pore_pred else None,
+            skin_type=blp_result.skin_type,
+            skin_issue=blp_result.skin_issue,
+            acne_confidence=acne_pred.confidence if acne_pred else None,
+            skin_type_confidence=skin_type_pred.confidence if skin_type_pred else None,
+            skin_issue_confidence=skin_issue_pred.confidence if skin_issue_pred else None,
             explanation=blp_result.explanation,
             recommendations=blp_result.recommendations,
             educational_note=blp_result.educational_note,
-            models_disagree=blp_result.models_disagree,
-            disagreement_message=blp_result.disagreement_message,
         )
 
     @staticmethod
-    def build_low_confidence_report(prediction: ModelPrediction, message: str) -> AnalysisReport:
+    def build_low_confidence_report(
+        predictions: Dict[str, ModelPrediction], message: str
+    ) -> AnalysisReport:
+        # Use the highest confidence from any model
+        best_conf = max((p.confidence for p in predictions.values()), default=None)
         return AnalysisReport(
             id=str(uuid.uuid4()),
             created_at=datetime.utcnow(),
             status=AnalysisStatus.LOW_CONFIDENCE,
-            confidence=prediction.confidence,
+            acne_confidence=best_conf,
             message=message,
         )
 
     @staticmethod
     def build_no_face_report(message: str) -> AnalysisReport:
+        """Face detection failed — the user needs to retake the photo."""
         return AnalysisReport(
             id=str(uuid.uuid4()),
             created_at=datetime.utcnow(),
