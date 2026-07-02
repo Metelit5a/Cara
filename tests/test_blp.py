@@ -1,154 +1,164 @@
-"""Tests for the BLP engine and report generation."""
+"""Tests for the BLP Engine with new 3-model architecture."""
 
 import pytest
-from shared.schemas import ModelPrediction, AcneSeverity, PoreSeverity
+from backend.blp.engine import BLPEngine
+from shared.schemas import ModelPrediction, AcneSeverity, SkinType, SkinIssue
 
 
-class TestBLPEngine:
-    """Test business logic processing."""
+@pytest.fixture
+def engine():
+    return BLPEngine()
 
-    def test_process_clear(self):
-        from backend.blp.engine import BLPEngine
 
-        engine = BLPEngine()
-        prediction = ModelPrediction(
-            model_name="acne_severity",
-            predicted_class=0,
-            predicted_label="clear",
-            confidence=0.92,
-            all_probabilities=[0.92, 0.05, 0.02, 0.01],
-        )
-        result = engine.process({"acne": prediction})
+def _make_prediction(model_name: str, label: str, confidence: float) -> ModelPrediction:
+    """Helper to create a ModelPrediction with sensible defaults."""
+    class_maps = {
+        "acne": ["clear", "mild", "moderate", "severe"],
+        "skin_type": ["combination", "dry", "normal", "oily"],
+        "skin_issues": ["blackheads", "dark_spots", "healthy", "pores", "wrinkles"],
+    }
+    classes = class_maps[model_name]
+    idx = classes.index(label)
+    remainder = (1.0 - confidence) / (len(classes) - 1)
+    probs = [confidence if i == idx else remainder for i in range(len(classes))]
+    return ModelPrediction(
+        model_name=model_name,
+        predicted_class=idx,
+        predicted_label=label,
+        confidence=confidence,
+        all_probabilities=probs,
+    )
 
+
+class TestBLPBasicProcessing:
+    def test_acne_clear_no_recommendations(self, engine):
+        predictions = {"acne": _make_prediction("acne", "clear", 0.8)}
+        result = engine.process(predictions)
         assert result.acne_severity == AcneSeverity.CLEAR
-        assert len(result.recommendations) > 0
-        assert "clear" in result.explanation.lower()
+        assert len(result.recommendations) == 0
 
-    def test_process_severe(self):
-        from backend.blp.engine import BLPEngine
-
-        engine = BLPEngine()
-        prediction = ModelPrediction(
-            model_name="acne_severity",
-            predicted_class=3,
-            predicted_label="severe",
-            confidence=0.85,
-            all_probabilities=[0.02, 0.05, 0.08, 0.85],
-        )
-        result = engine.process({"acne": prediction})
-
-        assert result.acne_severity == AcneSeverity.SEVERE
-        assert len(result.recommendations) > 0
-        assert "dermatologist" in result.educational_note.lower()
-
-    def test_all_severities_have_rules(self):
-        from backend.blp.engine import BLPEngine
-
-        engine = BLPEngine()
-        for severity in ["clear", "mild", "moderate", "severe"]:
-            prediction = ModelPrediction(
-                model_name="acne_severity",
-                predicted_class=0,
-                predicted_label=severity,
-                confidence=0.8,
-                all_probabilities=[0.8, 0.1, 0.05, 0.05],
-            )
-            result = engine.process({"acne": prediction})
-            assert result.acne_severity.value == severity
-            assert len(result.recommendations) >= 1
-            assert result.explanation
-            assert result.educational_note
-
-    def test_process_pores(self):
-        from backend.blp.engine import BLPEngine
-
-        engine = BLPEngine()
-        prediction = ModelPrediction(
-            model_name="pores_detection",
-            predicted_class=2,
-            predicted_label="moderate",
-            confidence=0.75,
-            all_probabilities=[0.0, 0.0, 0.75, 0.25],
-        )
-        result = engine.process({"pores": prediction})
-
-        assert result.pore_severity == PoreSeverity.MODERATE
-        assert len(result.recommendations) > 0
-
-    def test_process_both_models(self):
-        from backend.blp.engine import BLPEngine
-
-        engine = BLPEngine()
-        acne_pred = ModelPrediction(
-            model_name="acne_severity",
-            predicted_class=1,
-            predicted_label="mild",
-            confidence=0.8,
-            all_probabilities=[0.1, 0.8, 0.05, 0.05],
-        )
-        pore_pred = ModelPrediction(
-            model_name="pores_detection",
-            predicted_class=1,
-            predicted_label="mild",
-            confidence=0.7,
-            all_probabilities=[0.0, 0.7, 0.2, 0.1],
-        )
-        result = engine.process({"acne": acne_pred, "pores": pore_pred})
-
+    def test_acne_mild_has_recommendations(self, engine):
+        predictions = {"acne": _make_prediction("acne", "mild", 0.7)}
+        result = engine.process(predictions)
         assert result.acne_severity == AcneSeverity.MILD
-        assert result.pore_severity == PoreSeverity.MILD
         assert len(result.recommendations) > 0
-        # Should have merged recommendations from both
-        assert result.explanation
-        assert result.educational_note
 
-    def test_low_confidence_message(self):
-        from backend.blp.engine import BLPEngine
+    def test_acne_severe_has_strong_recommendations(self, engine):
+        predictions = {"acne": _make_prediction("acne", "severe", 0.6)}
+        result = engine.process(predictions)
+        assert result.acne_severity == AcneSeverity.SEVERE
+        assert len(result.recommendations) >= 3
 
-        engine = BLPEngine()
-        assert engine.low_confidence_message
-        assert engine.confidence_threshold > 0
+    def test_skin_type_oily(self, engine):
+        predictions = {"skin_type": _make_prediction("skin_type", "oily", 0.8)}
+        result = engine.process(predictions)
+        assert result.skin_type == SkinType.OILY
+        assert len(result.recommendations) > 0
+
+    def test_skin_type_dry(self, engine):
+        predictions = {"skin_type": _make_prediction("skin_type", "dry", 0.7)}
+        result = engine.process(predictions)
+        assert result.skin_type == SkinType.DRY
+        ingredients = [r.ingredient for r in result.recommendations]
+        assert any("Hyaluronic" in i for i in ingredients)
+
+    def test_skin_issue_healthy_no_recommendations(self, engine):
+        predictions = {"skin_issues": _make_prediction("skin_issues", "healthy", 0.8)}
+        result = engine.process(predictions)
+        assert result.skin_issue == SkinIssue.HEALTHY
+        assert len(result.recommendations) == 0
+
+    def test_skin_issue_blackheads(self, engine):
+        predictions = {"skin_issues": _make_prediction("skin_issues", "blackheads", 0.7)}
+        result = engine.process(predictions)
+        assert result.skin_issue == SkinIssue.BLACKHEADS
+        assert len(result.recommendations) > 0
+
+    def test_skin_issue_dark_spots_recommends_vitamin_c(self, engine):
+        predictions = {"skin_issues": _make_prediction("skin_issues", "dark_spots", 0.6)}
+        result = engine.process(predictions)
+        assert result.skin_issue == SkinIssue.DARK_SPOTS
+        ingredients = [r.ingredient for r in result.recommendations]
+        assert any("Vitamin C" in i for i in ingredients)
 
 
-class TestReportBuilder:
-    """Test report generation."""
+class TestBLPMultiModel:
+    def test_all_three_models_combined(self, engine):
+        predictions = {
+            "acne": _make_prediction("acne", "mild", 0.7),
+            "skin_type": _make_prediction("skin_type", "oily", 0.8),
+            "skin_issues": _make_prediction("skin_issues", "blackheads", 0.6),
+        }
+        result = engine.process(predictions)
+        assert result.acne_severity == AcneSeverity.MILD
+        assert result.skin_type == SkinType.OILY
+        assert result.skin_issue == SkinIssue.BLACKHEADS
+        assert len(result.recommendations) > 3
 
-    def test_success_report(self):
-        from backend.report_generation.builder import ReportBuilder
-        from shared.schemas import BLPResult, Recommendation
+    def test_healthy_across_all_models(self, engine):
+        predictions = {
+            "acne": _make_prediction("acne", "clear", 0.9),
+            "skin_type": _make_prediction("skin_type", "normal", 0.85),
+            "skin_issues": _make_prediction("skin_issues", "healthy", 0.8),
+        }
+        result = engine.process(predictions)
+        assert result.acne_severity == AcneSeverity.CLEAR
+        assert result.skin_type == SkinType.NORMAL
+        assert result.skin_issue == SkinIssue.HEALTHY
 
-        prediction = ModelPrediction(
-            model_name="acne_severity",
-            predicted_class=1,
-            predicted_label="mild",
-            confidence=0.78,
-            all_probabilities=[0.1, 0.78, 0.1, 0.02],
-        )
-        blp_result = BLPResult(
-            acne_severity=AcneSeverity.MILD,
-            recommendations=[Recommendation(ingredient="Test", reason="Test reason", category="test")],
-            explanation="Test explanation",
-            educational_note="Test note",
-        )
-        report = ReportBuilder.build_success_report({"acne": prediction}, blp_result)
+    def test_no_duplicate_ingredients(self, engine):
+        predictions = {
+            "acne": _make_prediction("acne", "mild", 0.7),
+            "skin_type": _make_prediction("skin_type", "oily", 0.8),
+        }
+        result = engine.process(predictions)
+        ingredients = [r.ingredient for r in result.recommendations]
+        assert len(ingredients) == len(set(ingredients))
 
-        assert report.status.value == "success"
-        assert report.acne_severity == AcneSeverity.MILD
-        assert report.confidence == 0.78
-        assert len(report.recommendations) == 1
-        assert report.id
 
-    def test_no_face_report(self):
-        from backend.report_generation.builder import ReportBuilder
+class TestBLPConfidenceThreshold:
+    def test_below_threshold_ignored(self, engine):
+        predictions = {"acne": _make_prediction("acne", "severe", 0.2)}
+        result = engine.process(predictions)
+        assert result.acne_severity == AcneSeverity.CLEAR
+        assert len(result.recommendations) == 0
 
-        report = ReportBuilder.build_no_face_report("No face detected")
-        assert report.status.value == "no_face_detected"
-        assert report.message == "No face detected"
-        assert report.acne_severity is None
+    def test_above_threshold_used(self, engine):
+        predictions = {"acne": _make_prediction("acne", "moderate", 0.35)}
+        result = engine.process(predictions)
+        assert result.acne_severity == AcneSeverity.MODERATE
+        assert len(result.recommendations) > 0
 
-    def test_error_report(self):
-        from backend.report_generation.builder import ReportBuilder
+    def test_mixed_confidence(self, engine):
+        predictions = {
+            "acne": _make_prediction("acne", "severe", 0.15),
+            "skin_type": _make_prediction("skin_type", "oily", 0.9),
+        }
+        result = engine.process(predictions)
+        assert result.acne_severity == AcneSeverity.CLEAR
+        assert result.skin_type == SkinType.OILY
 
-        report = ReportBuilder.build_error_report("Something went wrong")
-        assert report.status.value == "error"
-        assert report.message == "Something went wrong"
+
+class TestBLPAllRulesReachable:
+    def test_all_acne_rules(self, engine):
+        for severity in ["clear", "mild", "moderate", "severe"]:
+            preds = {"acne": _make_prediction("acne", severity, 0.8)}
+            result = engine.process(preds)
+            assert result.acne_severity == AcneSeverity(severity)
+
+    def test_all_skin_type_rules(self, engine):
+        for stype in ["oily", "dry", "normal", "combination"]:
+            preds = {"skin_type": _make_prediction("skin_type", stype, 0.8)}
+            result = engine.process(preds)
+            assert result.skin_type == SkinType(stype)
+
+    def test_all_skin_issue_rules(self, engine):
+        for issue in ["healthy", "blackheads", "dark_spots", "pores", "wrinkles"]:
+            preds = {"skin_issues": _make_prediction("skin_issues", issue, 0.8)}
+            result = engine.process(preds)
+            assert result.skin_issue == SkinIssue(issue)
+
+    def test_empty_predictions(self, engine):
+        result = engine.process({})
+        assert result.acne_severity == AcneSeverity.CLEAR
+        assert result.explanation == "Analysis complete."

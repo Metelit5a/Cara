@@ -8,8 +8,8 @@ import io
 
 @pytest.fixture
 def sample_face_image_bytes():
-    """Generate a synthetic test image (224x224 RGB)."""
-    img = Image.fromarray(np.random.randint(0, 255, (224, 224, 3), dtype=np.uint8))
+    """Generate a synthetic test image (300x300 RGB face-like)."""
+    img = Image.fromarray(np.random.randint(100, 200, (300, 300, 3), dtype=np.uint8))
     buf = io.BytesIO()
     img.save(buf, format="JPEG")
     return buf.getvalue()

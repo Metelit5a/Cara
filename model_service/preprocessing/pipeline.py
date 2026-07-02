@@ -139,7 +139,17 @@ _pipeline: Optional[PreprocessingPipeline] = None
 
 
 def get_pipeline() -> PreprocessingPipeline:
+    """Return the shared preprocessing pipeline.
+
+    Face-crop is required (`require_face=True`) so we never silently feed a
+    full selfie with background/hair/clothing into models that were trained
+    on face-centric close-ups.
+
+    Mask is disabled (`apply_mask=False`): the elliptical mean-colour fill
+    introduces an artefact the models were never trained on. Empirically,
+    pure face-crop matches the training distribution better than crop+mask.
+    """
     global _pipeline
     if _pipeline is None:
-        _pipeline = PreprocessingPipeline()
+        _pipeline = PreprocessingPipeline(require_face=True, apply_mask=False)
     return _pipeline

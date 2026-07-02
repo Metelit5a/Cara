@@ -1,0 +1,24 @@
+CARA — Run Guide
+=================
+
+1. Backend
+----------
+cd /Users/saritbenchimol/Documents/toar/Cara
+source .venv/bin/activate
+uvicorn backend.main:app --reload
+
+Runs on: http://127.0.0.1:8000
+
+
+2. Frontend
+-----------
+cd /Users/saritbenchimol/Documents/toar/Cara/frontend
+npm start
+
+Runs on: http://localhost:3000
+
+
+3. Tests
+--------
+source .venv/bin/activate
+python -m pytest tests/ -v

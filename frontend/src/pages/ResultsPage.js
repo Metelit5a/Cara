@@ -84,14 +84,6 @@ function ResultsPage() {
 
   return (
     <div>
-      {/* Mixed-signal disclaimer when the two acne models disagree */}
-      {report.models_disagree && (
-        <div className="disagreement-banner">
-          <span className="disagreement-icon" aria-hidden="true">⚠️</span>
-          <span>{report.disagreement_message || 'Our models show mixed signals — consider retaking the photo in better lighting.'}</span>
-        </div>
-      )}
-
       {/* Acne Severity & Confidence */}
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -101,38 +93,32 @@ function ResultsPage() {
           </span>
         </div>
 
-        <ConfidenceMeter confidence={report.confidence} />
+        <ConfidenceMeter confidence={report.acne_confidence} />
       </div>
 
-      {/* General Acne Analysis */}
-      {report.general_acne_severity && (
+      {/* Skin Type */}
+      {report.skin_type && (
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h2>General Acne Analysis</h2>
-            <span className={`severity-badge severity-${report.general_acne_severity}`}>
-              {report.general_acne_severity}
+            <h2>Skin Type</h2>
+            <span className={`severity-badge severity-${report.skin_type}`}>
+              {report.skin_type}
             </span>
           </div>
-
-          {report.general_acne_confidence && (
-            <ConfidenceMeter confidence={report.general_acne_confidence} />
-          )}
+          <ConfidenceMeter confidence={report.skin_type_confidence} />
         </div>
       )}
 
-      {/* Pores Analysis */}
-      {report.pore_severity && (
+      {/* Skin Issues */}
+      {report.skin_issue && (
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h2>Pores Analysis</h2>
-            <span className={`severity-badge severity-${report.pore_severity}`}>
-              {report.pore_severity}
+            <h2>Skin Condition</h2>
+            <span className={`severity-badge severity-${report.skin_issue}`}>
+              {report.skin_issue.replace('_', ' ')}
             </span>
           </div>
-
-          {report.pore_confidence && (
-            <ConfidenceMeter confidence={report.pore_confidence} />
-          )}
+          <ConfidenceMeter confidence={report.skin_issue_confidence} />
         </div>
       )}
 

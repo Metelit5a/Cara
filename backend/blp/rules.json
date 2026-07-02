@@ -1,221 +1,126 @@
 {
+  "confidence_threshold": 0.30,
+  "low_confidence_message": "Our models are not confident enough about this image. Please try again with better lighting and a clearer photo.",
+
   "acne_rules": {
     "clear": {
-      "explanation": "Your skin appears clear with no significant acne detected.",
-      "educational_note": "Maintaining clear skin involves consistent skincare routines. Focus on gentle cleansing, sun protection, and hydration to keep your skin healthy.",
-      "recommendations": [
-        {
-          "ingredient": "Niacinamide (Vitamin B3)",
-          "reason": "Helps maintain skin barrier integrity and provides antioxidant protection for clear skin maintenance.",
-          "category": "maintenance"
-        },
-        {
-          "ingredient": "Hyaluronic Acid",
-          "reason": "Provides lightweight hydration without clogging pores, keeping skin plump and healthy.",
-          "category": "hydration"
-        },
-        {
-          "ingredient": "Broad-Spectrum SPF 30+",
-          "reason": "Daily sun protection prevents premature aging and helps maintain even skin tone.",
-          "category": "sun_protection"
-        }
-      ]
+      "explanation": "Your skin appears clear with no significant acne.",
+      "recommendations": [],
+      "educational_note": "Clear skin still benefits from a consistent routine: gentle cleanser, moisturizer, and SPF daily."
     },
     "mild": {
-      "explanation": "Mild acne has been detected. This typically presents as occasional small blemishes or comedones (blackheads/whiteheads).",
-      "educational_note": "Mild acne is very common and often responds well to consistent over-the-counter skincare routines. Gentle, non-comedogenic products are recommended. Avoid harsh scrubbing which can irritate the skin further.",
+      "explanation": "Mild acne detected — a few small blemishes or comedones.",
       "recommendations": [
-        {
-          "ingredient": "Salicylic Acid (BHA) 0.5-2%",
-          "reason": "A beta-hydroxy acid that penetrates into pores to dissolve excess oil and dead skin cells, helping to clear minor breakouts.",
-          "category": "exfoliation"
-        },
-        {
-          "ingredient": "Niacinamide (Vitamin B3) 5%",
-          "reason": "Helps regulate sebum production, minimize the appearance of pores, and reduce mild inflammation.",
-          "category": "oil_control"
-        },
-        {
-          "ingredient": "Tea Tree Oil (diluted)",
-          "reason": "A natural antimicrobial that can help reduce minor blemishes when applied topically in low concentrations.",
-          "category": "antimicrobial"
-        },
-        {
-          "ingredient": "Non-comedogenic Moisturizer",
-          "reason": "Maintaining skin hydration is important even with mild acne. Look for lightweight, oil-free formulations.",
-          "category": "hydration"
-        }
-      ]
+        {"ingredient": "Salicylic Acid (0.5-2%)", "reason": "Unclogs pores and reduces mild breakouts", "category": "treatment"},
+        {"ingredient": "Niacinamide (5%)", "reason": "Reduces inflammation and regulates sebum", "category": "treatment"},
+        {"ingredient": "Gentle Cleanser", "reason": "Keeps skin clean without stripping the moisture barrier", "category": "cleanser"}
+      ],
+      "educational_note": "Mild acne is very common and responds well to consistent over-the-counter treatments. Avoid picking at blemishes."
     },
     "moderate": {
-      "explanation": "Moderate acne has been detected. This typically includes a mix of inflammatory papules, pustules, and comedones across broader areas of the face.",
-      "educational_note": "Moderate acne benefits from a more targeted skincare approach. Consider products with active ingredients that address both bacterial factors and excess oil production. Consistency is key — most active ingredients need 6-8 weeks to show significant improvement. Avoid picking or squeezing blemishes as this can lead to scarring.",
+      "explanation": "Moderate acne detected — multiple visible blemishes or inflamed spots.",
       "recommendations": [
-        {
-          "ingredient": "Benzoyl Peroxide 2.5-5%",
-          "reason": "An effective antimicrobial agent that reduces acne-causing bacteria on the skin surface while helping to unclog pores.",
-          "category": "antimicrobial"
-        },
-        {
-          "ingredient": "Salicylic Acid (BHA) 2%",
-          "reason": "Helps unclog pores and reduce excess oil production, targeting the root causes of comedonal acne.",
-          "category": "exfoliation"
-        },
-        {
-          "ingredient": "Azelaic Acid 10-15%",
-          "reason": "Addresses both bacterial factors and post-inflammatory hyperpigmentation, helping with active breakouts and residual marks.",
-          "category": "anti_inflammatory"
-        },
-        {
-          "ingredient": "Zinc-based Formulations",
-          "reason": "Zinc has anti-inflammatory and oil-regulating properties that can help calm moderate breakouts.",
-          "category": "oil_control"
-        },
-        {
-          "ingredient": "Centella Asiatica (Cica)",
-          "reason": "A soothing ingredient that supports skin healing and reduces irritation from active ingredients.",
-          "category": "soothing"
-        }
-      ]
+        {"ingredient": "Benzoyl Peroxide (2.5-5%)", "reason": "Kills acne-causing bacteria and reduces inflammation", "category": "treatment"},
+        {"ingredient": "Retinol (0.3-0.5%)", "reason": "Increases cell turnover and prevents clogged pores", "category": "treatment"},
+        {"ingredient": "Niacinamide (10%)", "reason": "Calms inflammation and strengthens skin barrier", "category": "serum"},
+        {"ingredient": "Non-comedogenic Moisturizer", "reason": "Hydrates without clogging pores", "category": "moisturizer"}
+      ],
+      "educational_note": "Moderate acne benefits from a targeted routine. Introduce active ingredients one at a time. If no improvement in 6-8 weeks, consider consulting a dermatologist."
     },
     "severe": {
-      "explanation": "Severe acne has been detected. This may include widespread inflammatory lesions, deep papules, and extensive breakout coverage.",
-      "educational_note": "Severe acne typically benefits from professional dermatological guidance in addition to topical care. The recommendations below are educational skincare insights — for persistent severe acne, consulting a dermatologist is strongly encouraged. They can provide prescription-strength treatments tailored to your specific needs. This analysis is for educational purposes only and does not constitute medical advice.",
+      "explanation": "Severe acne detected — widespread inflammation and/or deep blemishes.",
       "recommendations": [
-        {
-          "ingredient": "Benzoyl Peroxide 5-10%",
-          "reason": "Higher concentration antimicrobial treatment that helps reduce bacterial load on heavily affected areas.",
-          "category": "antimicrobial"
-        },
-        {
-          "ingredient": "Retinol (Vitamin A) 0.3-0.5%",
-          "reason": "Promotes cell turnover and helps prevent clogged pores. Start with lower concentrations and build tolerance gradually. Use at night with SPF during the day.",
-          "category": "cell_turnover"
-        },
-        {
-          "ingredient": "Azelaic Acid 15-20%",
-          "reason": "Pharmaceutical-grade azelaic acid addresses inflammation, bacterial factors, and hyperpigmentation simultaneously.",
-          "category": "anti_inflammatory"
-        },
-        {
-          "ingredient": "Gentle Cleanser (pH 5.5)",
-          "reason": "Severely affected skin needs gentle cleansing to avoid further barrier damage. Avoid harsh sulfates and physical scrubs.",
-          "category": "cleansing"
-        },
-        {
-          "ingredient": "Ceramide-based Moisturizer",
-          "reason": "Helps restore the skin barrier which is often compromised with severe acne and active treatments.",
-          "category": "barrier_repair"
-        },
-        {
-          "ingredient": "SPF 50+ Sunscreen",
-          "reason": "Post-inflammatory skin is highly susceptible to sun damage and pigmentation. Daily sun protection is essential.",
-          "category": "sun_protection"
-        }
-      ]
+        {"ingredient": "Benzoyl Peroxide (5-10%)", "reason": "Strong antibacterial for severe breakouts", "category": "treatment"},
+        {"ingredient": "Adapalene (Differin 0.1%)", "reason": "Prescription-strength retinoid available OTC, reduces severe acne", "category": "treatment"},
+        {"ingredient": "Azelaic Acid (15-20%)", "reason": "Anti-inflammatory and antibacterial, helps with post-acne marks", "category": "treatment"},
+        {"ingredient": "Gentle Hydrating Cleanser", "reason": "Severe acne needs gentle cleansing to avoid further irritation", "category": "cleanser"}
+      ],
+      "educational_note": "Severe acne often requires professional guidance. These recommendations can help while you seek a dermatologist consultation. Avoid harsh scrubs and over-washing."
     }
   },
-  "pore_rules": {
-    "minimal": {
-      "explanation": "Your pores appear minimal and well-maintained.",
-      "educational_note": "Small, barely visible pores indicate good skin health. Continue with your current routine and focus on prevention to maintain pore size over time.",
+
+  "skin_type_rules": {
+    "oily": {
+      "explanation": "Your skin type appears to be oily — producing excess sebum.",
       "recommendations": [
-        {
-          "ingredient": "Niacinamide (Vitamin B3) 5%",
-          "reason": "Helps maintain tight pore appearance and regulates oil production to prevent pore enlargement.",
-          "category": "pore_maintenance"
-        },
-        {
-          "ingredient": "Gentle Hydrating Toner",
-          "reason": "Keeps skin hydrated and balanced, preventing overproduction of oil that can stretch pores.",
-          "category": "hydration"
-        }
-      ]
+        {"ingredient": "Niacinamide (10%)", "reason": "Regulates oil production and minimizes pores", "category": "serum"},
+        {"ingredient": "Lightweight Gel Moisturizer", "reason": "Hydrates without adding oiliness", "category": "moisturizer"},
+        {"ingredient": "Clay Mask (weekly)", "reason": "Absorbs excess oil and deep-cleans pores", "category": "mask"}
+      ],
+      "educational_note": "Oily skin is actually less prone to premature aging. Don't over-strip — your skin will produce MORE oil to compensate."
     },
-    "mild": {
-      "explanation": "Mildly visible pores have been detected, primarily in the T-zone area.",
-      "educational_note": "Slightly visible pores are normal and often genetic. They can be minimized with consistent care focusing on keeping them clean and controlling oil production. Avoid pore strips which can damage surrounding skin.",
+    "dry": {
+      "explanation": "Your skin type appears to be dry — lacking moisture and potentially flaky.",
       "recommendations": [
-        {
-          "ingredient": "Salicylic Acid (BHA) 1-2%",
-          "reason": "Oil-soluble acid that penetrates into pores to dissolve sebum buildup and reduce their appearance.",
-          "category": "pore_cleansing"
-        },
-        {
-          "ingredient": "Niacinamide (Vitamin B3) 10%",
-          "reason": "Higher concentration helps visibly reduce pore size by regulating sebum production and improving skin elasticity.",
-          "category": "pore_minimizing"
-        },
-        {
-          "ingredient": "Clay Mask (weekly)",
-          "reason": "Draws out excess oil and impurities from pores, temporarily tightening their appearance.",
-          "category": "deep_cleansing"
-        }
-      ]
+        {"ingredient": "Hyaluronic Acid Serum", "reason": "Draws moisture into the skin for deep hydration", "category": "serum"},
+        {"ingredient": "Ceramide Moisturizer", "reason": "Repairs and strengthens the moisture barrier", "category": "moisturizer"},
+        {"ingredient": "Gentle Cream Cleanser", "reason": "Cleanses without stripping natural oils", "category": "cleanser"}
+      ],
+      "educational_note": "Dry skin needs hydration AND moisture. Hyaluronic acid pulls water in, ceramides lock it in. Avoid hot water and harsh soaps."
     },
-    "moderate": {
-      "explanation": "Moderately enlarged pores have been detected across noticeable areas of the face.",
-      "educational_note": "Moderately visible pores can be caused by excess sebum, age-related elasticity loss, or sun damage. A combination of exfoliation, oil control, and collagen-supporting ingredients works best. Results typically take 4-8 weeks of consistent use.",
+    "normal": {
+      "explanation": "Your skin type appears balanced — normal hydration levels.",
       "recommendations": [
-        {
-          "ingredient": "Retinol (Vitamin A) 0.25-0.5%",
-          "reason": "Increases cell turnover and boosts collagen production, helping to tighten pores from within over time.",
-          "category": "cell_turnover"
-        },
-        {
-          "ingredient": "Salicylic Acid (BHA) 2%",
-          "reason": "Deep-cleans pores by dissolving oil and dead cell buildup that stretches pore walls.",
-          "category": "exfoliation"
-        },
-        {
-          "ingredient": "Niacinamide (Vitamin B3) 10%",
-          "reason": "Regulates oil production and improves skin texture, making pores appear smaller.",
-          "category": "oil_control"
-        },
-        {
-          "ingredient": "AHA/BHA Chemical Peel (weekly)",
-          "reason": "Regular chemical exfoliation removes surface congestion and promotes smoother skin texture around pores.",
-          "category": "exfoliation"
-        }
-      ]
+        {"ingredient": "Vitamin C Serum (10-15%)", "reason": "Antioxidant protection and brightening for already healthy skin", "category": "serum"},
+        {"ingredient": "SPF 30+ Daily", "reason": "Protects your naturally balanced skin from sun damage", "category": "sunscreen"},
+        {"ingredient": "Gentle Cleanser", "reason": "Maintains your skin's natural balance", "category": "cleanser"}
+      ],
+      "educational_note": "Normal skin is well-balanced. Focus on maintenance and prevention — sunscreen is your best anti-aging investment."
     },
-    "severe": {
-      "explanation": "Significantly enlarged pores have been detected. This indicates excess sebum production and possible loss of skin elasticity.",
-      "educational_note": "Severely enlarged pores may benefit from professional treatments like laser therapy, microneedling, or chemical peels in addition to topical care. The recommendations below focus on the best at-home approach. For persistent concerns, consider consulting a dermatologist for in-office treatment options.",
+    "combination": {
+      "explanation": "Your skin type appears to be combination — oily in some areas, dry in others.",
       "recommendations": [
-        {
-          "ingredient": "Retinol (Vitamin A) 0.5-1%",
-          "reason": "Strong cell turnover agent that rebuilds collagen and tightens pore structure over time. Start low and increase gradually.",
-          "category": "cell_turnover"
-        },
-        {
-          "ingredient": "Salicylic Acid (BHA) 2%",
-          "reason": "Essential for keeping enlarged pores clear of congestion that makes them appear even larger.",
-          "category": "pore_cleansing"
-        },
-        {
-          "ingredient": "Glycolic Acid (AHA) 5-10%",
-          "reason": "Resurfaces the skin and improves texture by removing dead skin cells that accumulate around pore edges.",
-          "category": "resurfacing"
-        },
-        {
-          "ingredient": "Niacinamide (Vitamin B3) 10-15%",
-          "reason": "High-concentration niacinamide normalizes oil flow and visibly tightens pore appearance.",
-          "category": "pore_minimizing"
-        },
-        {
-          "ingredient": "Peptide Serum",
-          "reason": "Supports collagen and elastin production to restore skin firmness and structural support around pores.",
-          "category": "firming"
-        }
-      ]
+        {"ingredient": "Niacinamide (5%)", "reason": "Balances oil production in T-zone without drying other areas", "category": "serum"},
+        {"ingredient": "Lightweight Lotion", "reason": "Hydrates dry areas without overwhelming oily zones", "category": "moisturizer"},
+        {"ingredient": "BHA Toner (salicylic acid)", "reason": "Targets oily T-zone pores without over-drying cheeks", "category": "toner"}
+      ],
+      "educational_note": "Combination skin benefits from zone-specific treatment. Apply richer products on dry areas and lighter formulas on the oily T-zone."
     }
   },
-  "confidence_thresholds": {
-    "high": 0.75,
-    "medium": 0.5,
-    "low": 0.4
-  },
-  "low_confidence_message": "The analysis confidence is below our reliability threshold. The image quality may be insufficient for accurate assessment. Please try again with a clearer, well-lit photo of your face.",
-  "disagreement_message": "Our models show mixed signals \u2014 consider retaking the photo in better lighting."
+
+  "skin_issue_rules": {
+    "healthy": {
+      "explanation": "No specific skin issues detected.",
+      "recommendations": [],
+      "educational_note": "Your skin looks healthy! Maintain your routine with cleanser, moisturizer, and SPF."
+    },
+    "blackheads": {
+      "explanation": "Blackheads (open comedones) detected — clogged pores with oxidized sebum.",
+      "recommendations": [
+        {"ingredient": "Salicylic Acid (2%)", "reason": "Oil-soluble BHA that penetrates and unclogs pores from within", "category": "treatment"},
+        {"ingredient": "Oil Cleansing", "reason": "Dissolves sebum plugs without irritation (oil dissolves oil)", "category": "cleanser"},
+        {"ingredient": "Retinol (0.3%)", "reason": "Increases cell turnover to prevent pore clogging", "category": "treatment"}
+      ],
+      "educational_note": "Blackheads form when pores fill with sebum that oxidizes (turns dark). Don't squeeze — use chemical exfoliation instead. Results take 4-6 weeks."
+    },
+    "dark_spots": {
+      "explanation": "Dark spots or hyperpigmentation detected.",
+      "recommendations": [
+        {"ingredient": "Vitamin C (15-20%)", "reason": "Inhibits melanin production and fades existing spots", "category": "serum"},
+        {"ingredient": "Alpha Arbutin (2%)", "reason": "Gentle brightening agent that reduces pigmentation over time", "category": "serum"},
+        {"ingredient": "SPF 50", "reason": "Essential — sun exposure darkens existing spots and creates new ones", "category": "sunscreen"},
+        {"ingredient": "Niacinamide (10%)", "reason": "Prevents melanin transfer to skin surface", "category": "serum"}
+      ],
+      "educational_note": "Dark spots are caused by excess melanin production (sun, acne scars, hormones). Sunscreen is non-negotiable — without it, treatments won't work."
+    },
+    "pores": {
+      "explanation": "Enlarged or visible pores detected.",
+      "recommendations": [
+        {"ingredient": "Niacinamide (10%)", "reason": "Clinically proven to minimize pore appearance", "category": "serum"},
+        {"ingredient": "BHA (Salicylic Acid 2%)", "reason": "Cleans out pore contents, making them appear smaller", "category": "exfoliant"},
+        {"ingredient": "Retinol (0.5%)", "reason": "Increases collagen around pores, tightening their appearance", "category": "treatment"}
+      ],
+      "educational_note": "Pore size is largely genetic, but their APPEARANCE can be minimized. Keeping pores clean and building collagen around them makes them look smaller."
+    },
+    "wrinkles": {
+      "explanation": "Fine lines or wrinkles detected.",
+      "recommendations": [
+        {"ingredient": "Retinol (0.5-1%)", "reason": "Gold standard for wrinkle reduction — increases collagen production", "category": "treatment"},
+        {"ingredient": "Peptide Complex", "reason": "Signals skin to produce more collagen and elastin", "category": "serum"},
+        {"ingredient": "Hyaluronic Acid", "reason": "Plumps skin and fills fine lines with hydration", "category": "serum"},
+        {"ingredient": "SPF 50 Daily", "reason": "UV is the #1 cause of premature wrinkles", "category": "sunscreen"}
+      ],
+      "educational_note": "Wrinkles form from collagen breakdown (UV, aging, repetitive movements). Retinol and sunscreen together are the most effective anti-aging combination backed by research."
+    }
+  }
 }

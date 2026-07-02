@@ -1,1 +1,0 @@
-"""Pores detection model package."""

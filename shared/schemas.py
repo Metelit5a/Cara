@@ -15,7 +15,23 @@ class AcneSeverity(str, Enum):
     SEVERE = "severe"
 
 
+class SkinType(str, Enum):
+    OILY = "oily"
+    DRY = "dry"
+    NORMAL = "normal"
+    COMBINATION = "combination"
+
+
+class SkinIssue(str, Enum):
+    HEALTHY = "healthy"
+    BLACKHEADS = "blackheads"
+    DARK_SPOTS = "dark_spots"
+    PORES = "pores"
+    WRINKLES = "wrinkles"
+
+
 class PoreSeverity(str, Enum):
+    """Legacy — kept for backward compatibility."""
     MINIMAL = "minimal"
     MILD = "mild"
     MODERATE = "moderate"
@@ -61,13 +77,11 @@ class Recommendation(BaseModel):
 class BLPResult(BaseModel):
     """Output from the Business Logic Processing layer."""
     acne_severity: AcneSeverity
-    pore_severity: Optional[PoreSeverity] = None
-    general_acne_severity: Optional[AcneSeverity] = None
+    skin_type: Optional[SkinType] = None
+    skin_issue: Optional[SkinIssue] = None
     recommendations: List[Recommendation]
     explanation: str
     educational_note: str
-    models_disagree: bool = False
-    disagreement_message: Optional[str] = None
 
 
 # ── Report schemas ──
@@ -78,18 +92,15 @@ class AnalysisReport(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     status: AnalysisStatus
     acne_severity: Optional[AcneSeverity] = None
-    pore_severity: Optional[PoreSeverity] = None
-    general_acne_severity: Optional[AcneSeverity] = None
-    confidence: Optional[float] = None
-    pore_confidence: Optional[float] = None
-    general_acne_confidence: Optional[float] = None
-    pore_count: Optional[int] = None
+    skin_type: Optional[SkinType] = None
+    skin_issue: Optional[SkinIssue] = None
+    acne_confidence: Optional[float] = None
+    skin_type_confidence: Optional[float] = None
+    skin_issue_confidence: Optional[float] = None
     explanation: Optional[str] = None
     recommendations: List[Recommendation] = []
     educational_note: Optional[str] = None
     message: Optional[str] = None
-    models_disagree: bool = False
-    disagreement_message: Optional[str] = None
 
 
 # ── API schemas ──
@@ -104,7 +115,5 @@ class HealthResponse(BaseModel):
     model_config = {"protected_namespaces": ()}
 
     status: str = "healthy"
-    model_loaded: bool
-    pores_model_loaded: bool = False
-    general_acne_model_loaded: bool = False
+    models_loaded: List[str] = []
     version: str = "0.1.0"
