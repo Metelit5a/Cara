@@ -18,8 +18,15 @@ class Settings(BaseSettings):
     # Model - Skin Type
     skin_type_model_weights_path: str = "model_service/checkpoints/skin_type_model_best.pth"
 
-    # Model - Skin Issues
+    # Model - Skin Issues (DEPRECATED — legacy single-label model, replaced by
+    # `skin_conditions` below. Kept only so historical checkpoints still load.)
     skin_issues_model_weights_path: str = "model_service/checkpoints/skin_issues_model_best.pth"
+
+    # Model - Skin Conditions (multi-label: pores, blackheads)
+    # Threshold applied to each sigmoid output. Findings above the threshold
+    # are reported; below → not mentioned (i.e. "no notable conditions").
+    skin_conditions_model_weights_path: str = "model_service/checkpoints/skin_conditions_model_best.pth"
+    skin_conditions_threshold: float = 0.50
 
     # Storage
     storage_backend: str = "json"  # "json" or "mongodb"
