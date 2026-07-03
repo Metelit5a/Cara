@@ -22,7 +22,7 @@ from PIL import Image
 CHECKPOINT_DIR = Path("model_service/checkpoints")
 ACNE_CHECKPOINT = CHECKPOINT_DIR / "acne_model_best.pth"
 SKIN_TYPE_CHECKPOINT = CHECKPOINT_DIR / "skin_type_model_best.pth"
-SKIN_ISSUES_CHECKPOINT = CHECKPOINT_DIR / "skin_issues_model_best.pth"
+# The legacy `skin_issues_model_best.pth` is no longer loaded by the app.
 
 DATA_DIR = Path("data")
 
@@ -31,9 +31,6 @@ requires_acne_model = pytest.mark.skipif(
 )
 requires_skin_type_model = pytest.mark.skipif(
     not SKIN_TYPE_CHECKPOINT.exists(), reason="Skin type model checkpoint not found"
-)
-requires_skin_issues_model = pytest.mark.skipif(
-    not SKIN_ISSUES_CHECKPOINT.exists(), reason="Skin issues model checkpoint not found"
 )
 
 
@@ -203,101 +200,82 @@ class TestSkinTypeModelAlgorithm:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Skin Issues Model Tests
+# Skin Conditions Model Tests (multi-label)
 # ═══════════════════════════════════════════════════════════════════════════════
+#
+# The legacy single-label `TestSkinIssuesModelAlgorithm` was removed with the
+# switch to multi-label. Those tests validated the deprecated `skin_issues`
+# model which is no longer loaded by the orchestrator (see
+# `data/skin_issues/README.md`). The multi-label successor is exercised by:
+#   - Training-data smoke tests below (this file)
+#   - Real-world regression: `tests/test_real_world_regression.py`
 
 
-@requires_skin_issues_model
-class TestSkinIssuesModelAlgorithm:
-    """Verify the skin issues model predicts correctly on known images."""
+SKIN_CONDITIONS_CHECKPOINT = CHECKPOINT_DIR / "skin_conditions_model_best.pth"
+requires_skin_conditions_model = pytest.mark.skipif(
+    not SKIN_CONDITIONS_CHECKPOINT.exists(),
+    reason="Skin conditions checkpoint not found (train it first)",
+)
+
+
+@requires_skin_conditions_model
+class TestSkinConditionsModelAlgorithm:
+    """Sanity checks for the multi-label skin_conditions model on training data.
+
+    These test that positive examples trigger their expected finding, and
+    that clean-skin examples produce empty findings. Uses training data so
+    this is a memorisation smoke test, NOT proof of generalisation \u2014 that
+    lives in `test_real_world_regression.py`.
+    """
 
     @pytest.fixture(autouse=True)
     def setup(self):
+        from shared.schemas import MultiLabelPrediction
+
         self.orchestrator = _get_orchestrator()
-        assert "skin_issues" in self.orchestrator.loaded_models
+        assert "skin_conditions" in self.orchestrator.loaded_models
+        self._MLP = MultiLabelPrediction
 
-    def test_blackheads_predicted_correctly(self):
-        """Images from 'blackheads' class should predict as blackheads."""
-        blackheads_dir = DATA_DIR / "skin_issues" / "blackheads"
-        if not blackheads_dir.exists():
-            pytest.skip("Blackheads images not found")
+    def _labels_for(self, image_path: Path):
+        results = _load_and_predict(self.orchestrator, image_path)
+        pred = results.get("skin_conditions")
+        assert isinstance(pred, self._MLP)
+        return {f.label.value for f in pred.findings}
 
-        images = _get_sample_images(blackheads_dir, count=10)
-        correct = 0
-        for img_path in images:
-            results = _load_and_predict(self.orchestrator, img_path)
-            if "skin_issues" in results and results["skin_issues"].predicted_label == "blackheads":
-                correct += 1
-
-        accuracy = correct / len(images) if images else 0
-        assert accuracy >= 0.85, (
-            f"Blackheads accuracy too low: {accuracy:.0%} ({correct}/{len(images)})"
-        )
-
-    def test_wrinkles_predicted_correctly(self):
-        """Images from 'wrinkles' class should predict as wrinkles."""
-        wrinkles_dir = DATA_DIR / "skin_issues" / "wrinkles"
-        if not wrinkles_dir.exists():
-            pytest.skip("Wrinkles images not found")
-
-        images = _get_sample_images(wrinkles_dir, count=10)
-        correct = 0
-        for img_path in images:
-            results = _load_and_predict(self.orchestrator, img_path)
-            if "skin_issues" in results and results["skin_issues"].predicted_label == "wrinkles":
-                correct += 1
-
-        accuracy = correct / len(images) if images else 0
-        assert accuracy >= 0.85, (
-            f"Wrinkles accuracy too low: {accuracy:.0%} ({correct}/{len(images)})"
-        )
-
-    def test_pores_predicted_correctly(self):
-        """Images from 'pores' class should predict as pores."""
-        pores_dir = DATA_DIR / "skin_issues" / "pores"
+    def test_pores_positive_examples(self):
+        pores_dir = DATA_DIR / "skin_conditions" / "pores"
         if not pores_dir.exists():
-            pytest.skip("Pores images not found")
+            pytest.skip("Pores training images not found")
 
         images = _get_sample_images(pores_dir, count=10)
-        correct = 0
-        for img_path in images:
-            results = _load_and_predict(self.orchestrator, img_path)
-            if "skin_issues" in results and results["skin_issues"].predicted_label == "pores":
-                correct += 1
-
-        accuracy = correct / len(images) if images else 0
-        assert accuracy >= 0.90, (
-            f"Pores accuracy too low: {accuracy:.0%} ({correct}/{len(images)})"
+        correct = sum(1 for p in images if "pores" in self._labels_for(p))
+        rate = correct / len(images) if images else 0
+        assert rate >= 0.70, (
+            f"Pores recall on training data too low: {rate:.0%} ({correct}/{len(images)})"
         )
 
-    def test_healthy_skin_predicted_correctly(self):
-        """Images from 'healthy' class should predict as healthy."""
-        healthy_dir = DATA_DIR / "skin_issues" / "healthy"
-        if not healthy_dir.exists():
-            pytest.skip("Healthy skin images not found")
+    def test_blackheads_positive_examples(self):
+        d = DATA_DIR / "skin_conditions" / "blackheads"
+        if not d.exists():
+            pytest.skip("Blackheads training images not found")
 
-        images = _get_sample_images(healthy_dir, count=10)
-        correct = 0
-        for img_path in images:
-            results = _load_and_predict(self.orchestrator, img_path)
-            if "skin_issues" in results and results["skin_issues"].predicted_label == "healthy":
-                correct += 1
-
-        accuracy = correct / len(images) if images else 0
-        assert accuracy >= 0.85, (
-            f"Healthy skin accuracy too low: {accuracy:.0%} ({correct}/{len(images)})"
+        images = _get_sample_images(d, count=10)
+        correct = sum(1 for p in images if "blackheads" in self._labels_for(p))
+        rate = correct / len(images) if images else 0
+        assert rate >= 0.70, (
+            f"Blackheads recall on training data too low: {rate:.0%} ({correct}/{len(images)})"
         )
 
-    def test_skin_issues_output_has_valid_labels(self):
-        """Skin issues predictions should always be one of 5 valid labels."""
-        valid_labels = {"healthy", "blackheads", "dark_spots", "pores", "wrinkles"}
-        blackheads_dir = DATA_DIR / "skin_issues" / "blackheads"
-        if not blackheads_dir.exists():
-            pytest.skip("Skin issues images not found")
+    def test_negative_examples_mostly_empty(self):
+        """Clean-skin (`negative/`) images should mostly produce empty findings."""
+        d = DATA_DIR / "skin_conditions" / "negative"
+        if not d.exists():
+            pytest.skip("Negative (clean skin) training images not found")
 
-        images = _get_sample_images(blackheads_dir, count=3)
-        for img_path in images:
-            results = _load_and_predict(self.orchestrator, img_path)
-            if "skin_issues" in results:
-                assert results["skin_issues"].predicted_label in valid_labels
-                assert len(results["skin_issues"].all_probabilities) == 5
+        images = _get_sample_images(d, count=10)
+        empty = sum(1 for p in images if len(self._labels_for(p)) == 0)
+        rate = empty / len(images) if images else 0
+        assert rate >= 0.50, (
+            f"Model over-flags negative examples: only {empty}/{len(images)} "
+            f"({rate:.0%}) came back empty. Threshold may be too low."
+        )

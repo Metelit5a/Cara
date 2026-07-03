@@ -105,6 +105,88 @@ def collect_samples(root: Path, class_to_idx: Dict[str, int]) -> List[Tuple[Path
     return samples
 
 
+class MultiLabelImageFolderDataset(Dataset):
+    """Multi-label classification dataset from single-label folder structure.
+
+    Each source folder maps to a multi-hot vector via `folder_to_vector`.
+    Example (2-class model with a `negative` bucket):
+        pores/       → [1, 0]   (has pores, no blackheads)
+        blackheads/  → [0, 1]
+        negative/    → [0, 0]
+
+    Note the noise: an image in `blackheads/` might in reality also have
+    pores, but we can't know without per-image annotations. Treating each
+    single-label folder as positive-only for its class is standard when
+    working with folder-labelled data.
+    """
+
+    def __init__(
+        self,
+        samples: List[Tuple[Path, "np.ndarray"]],
+        transform=None,
+    ):
+        self.samples = samples
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        path, label_vec = self.samples[idx]
+        try:
+            image = Image.open(path).convert("RGB")
+        except Exception:
+            image = Image.new("RGB", (224, 224), (128, 128, 128))
+        if self.transform:
+            image = self.transform(image)
+        return image, torch.as_tensor(label_vec, dtype=torch.float32)
+
+    @property
+    def targets(self) -> "np.ndarray":
+        """Stacked multi-hot label matrix (N, num_classes)."""
+        return np.stack([lbl for _, lbl in self.samples])
+
+
+def collect_multi_label_samples(
+    root: Path,
+    class_names: Dict[int, str],
+    negative_class: Optional[str],
+) -> List[Tuple[Path, np.ndarray]]:
+    """Walk a folder structure and produce multi-hot labels.
+
+    - A folder matching one of `class_names` values → one-hot at that index.
+    - A folder matching `negative_class` → all-zero vector (no conditions).
+    """
+    num_classes = len(class_names)
+    name_to_idx = {name: idx for idx, name in class_names.items()}
+    samples: List[Tuple[Path, np.ndarray]] = []
+
+    # Positive folders
+    for name, idx in name_to_idx.items():
+        d = root / name
+        if not d.exists():
+            print(f"  WARNING: {d} not found, skipping")
+            continue
+        vec = np.zeros(num_classes, dtype=np.float32)
+        vec[idx] = 1.0
+        for img_path in d.iterdir():
+            if img_path.suffix.lower() in ImageFolderDataset.VALID_EXTENSIONS:
+                samples.append((img_path, vec.copy()))
+
+    # Negative folder (all-zero labels)
+    if negative_class:
+        d = root / negative_class
+        if not d.exists():
+            print(f"  WARNING: negative folder {d} not found — model may be biased toward positives")
+        else:
+            vec = np.zeros(num_classes, dtype=np.float32)
+            for img_path in d.iterdir():
+                if img_path.suffix.lower() in ImageFolderDataset.VALID_EXTENSIONS:
+                    samples.append((img_path, vec.copy()))
+
+    return samples
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Transforms
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -230,42 +312,119 @@ def evaluate(model, loader, criterion, device):
     return running_loss / n, running_correct / n
 
 
+# ── Multi-label training ─────────────────────────────────────────────────────
+#
+# For multi-label we replace argmax with per-class sigmoid + 0.5 threshold, and
+# use macro-F1 across classes as the "accuracy" metric fed to the scheduler and
+# early-stop logic. F1 is picked (not subset-accuracy) because with rare
+# positive classes a model that predicts all-zero would score high on subset
+# accuracy while being useless.
+
+
+def _multi_label_f1(logits: torch.Tensor, labels: torch.Tensor,
+                    threshold: float = 0.5) -> torch.Tensor:
+    """Macro-F1 across output classes. Returns a scalar tensor."""
+    preds = (torch.sigmoid(logits) >= threshold).float()
+    # Per-class TP/FP/FN
+    tp = (preds * labels).sum(dim=0)
+    fp = (preds * (1 - labels)).sum(dim=0)
+    fn = ((1 - preds) * labels).sum(dim=0)
+    precision = tp / (tp + fp + 1e-9)
+    recall = tp / (tp + fn + 1e-9)
+    f1 = 2 * precision * recall / (precision + recall + 1e-9)
+    return f1.mean()
+
+
+def train_one_epoch_multi_label(model, loader, criterion, optimizer, device):
+    model.train()
+    running_loss = 0.0
+    running_f1_sum = 0.0
+    n_batches = 0
+    n_samples = 0
+    pbar = tqdm(loader, desc="  train", leave=False, dynamic_ncols=True)
+    for inputs, labels in pbar:
+        inputs, labels = inputs.to(device), labels.to(device)
+        optimizer.zero_grad()
+        outputs = model(inputs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        running_loss += loss.item() * inputs.size(0)
+        running_f1_sum += _multi_label_f1(outputs.detach(), labels).item()
+        n_samples += inputs.size(0)
+        n_batches += 1
+        pbar.set_postfix(
+            loss=f"{running_loss/n_samples:.4f}",
+            f1=f"{running_f1_sum/n_batches:.3f}",
+        )
+    return running_loss / n_samples, running_f1_sum / max(n_batches, 1)
+
+
+@torch.no_grad()
+def evaluate_multi_label(model, loader, criterion, device):
+    """Evaluate multi-label model. Returns (loss, macro_f1)."""
+    model.eval()
+    all_logits = []
+    all_labels = []
+    running_loss = 0.0
+    n_samples = 0
+    for inputs, labels in loader:
+        inputs, labels = inputs.to(device), labels.to(device)
+        outputs = model(inputs)
+        loss = criterion(outputs, labels)
+        running_loss += loss.item() * inputs.size(0)
+        n_samples += inputs.size(0)
+        all_logits.append(outputs.cpu())
+        all_labels.append(labels.cpu())
+    logits = torch.cat(all_logits)
+    labels_all = torch.cat(all_labels)
+    f1 = _multi_label_f1(logits, labels_all).item()
+    return running_loss / n_samples, f1
+
+
 def train_phase(model, train_loader, val_loader, criterion, optimizer, scheduler,
-                num_epochs, device, save_path, phase_name="", patience=5):
-    """Train for N epochs with early stopping, save best by validation accuracy.
+                num_epochs, device, save_path, phase_name="", patience=5,
+                multi_label=False):
+    """Train for N epochs with early stopping, save best by validation metric.
+
+    For single-label uses accuracy; for multi-label uses macro-F1.
 
     Args:
-        patience: Stop if val accuracy doesn't improve for this many epochs.
+        patience: Stop if validation metric doesn't improve for this many epochs.
+        multi_label: Route through the sigmoid+BCE training helpers.
     """
-    best_val_acc = 0.0
+    best_val_metric = 0.0
     best_wts = copy.deepcopy(model.state_dict())
     patience_counter = 0
+    metric_name = "f1" if multi_label else "acc"
+    train_step = train_one_epoch_multi_label if multi_label else train_one_epoch
+    eval_step = evaluate_multi_label if multi_label else evaluate
 
     for epoch in range(num_epochs):
         print(f"\n  Epoch {epoch + 1}/{num_epochs}")
 
-        train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device)
-        val_loss, val_acc = evaluate(model, val_loader, criterion, device)
+        train_loss, train_metric = train_step(model, train_loader, criterion, optimizer, device)
+        val_loss, val_metric = eval_step(model, val_loader, criterion, device)
 
         if scheduler:
             scheduler.step(val_loss)
 
-        print(f"    train: loss={train_loss:.4f} acc={train_acc:.3f}")
-        print(f"    val:   loss={val_loss:.4f} acc={val_acc:.3f}")
+        print(f"    train: loss={train_loss:.4f} {metric_name}={train_metric:.3f}")
+        print(f"    val:   loss={val_loss:.4f} {metric_name}={val_metric:.3f}")
 
-        if val_acc > best_val_acc:
-            best_val_acc = val_acc
+        if val_metric > best_val_metric:
+            best_val_metric = val_metric
             best_wts = copy.deepcopy(model.state_dict())
             torch.save(best_wts, save_path)
             patience_counter = 0
-            print(f"    ✓ New best val acc: {val_acc:.3f} → saved")
+            print(f"    ✓ New best val {metric_name}: {val_metric:.3f} → saved")
         else:
             patience_counter += 1
             if patience_counter >= patience:
                 print(f"    Early stopping after {patience} epochs without improvement")
                 break
 
-    print(f"\n  {phase_name} best val acc: {best_val_acc:.3f}")
+    print(f"\n  {phase_name} best val {metric_name}: {best_val_metric:.3f}")
     model.load_state_dict(best_wts)
     return model
 
@@ -302,6 +461,44 @@ def final_test(model, test_loader, device, class_names):
     return total_acc
 
 
+@torch.no_grad()
+def final_test_multi_label(model, test_loader, device, class_names, threshold: float = 0.5):
+    """Final multi-label evaluation: per-class precision, recall, F1."""
+    model.eval()
+    all_logits = []
+    all_labels = []
+    for inputs, labels in test_loader:
+        inputs = inputs.to(device)
+        outputs = model(inputs)
+        all_logits.append(outputs.cpu())
+        all_labels.append(labels)
+    logits = torch.cat(all_logits)
+    labels = torch.cat(all_labels)
+    preds = (torch.sigmoid(logits) >= threshold).float()
+
+    print(f"\n{'='*50}")
+    print(f"FINAL MULTI-LABEL TEST (threshold={threshold})")
+    print(f"{'='*50}")
+    for idx, name in class_names.items():
+        p = preds[:, idx]
+        t = labels[:, idx]
+        tp = (p * t).sum().item()
+        fp = (p * (1 - t)).sum().item()
+        fn = ((1 - p) * t).sum().item()
+        tn = ((1 - p) * (1 - t)).sum().item()
+        prec = tp / (tp + fp + 1e-9)
+        rec = tp / (tp + fn + 1e-9)
+        f1 = 2 * prec * rec / (prec + rec + 1e-9)
+        n_pos = int(t.sum().item())
+        print(
+            f"  {name:15s}: precision={prec:.3f}  recall={rec:.3f}  f1={f1:.3f}  "
+            f"(pos={n_pos}, tp={int(tp)}, fp={int(fp)}, fn={int(fn)}, tn={int(tn)})"
+        )
+    macro_f1 = _multi_label_f1(logits, labels, threshold).item()
+    print(f"\n  Macro F1: {macro_f1:.3f}")
+    return macro_f1
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Model Configurations
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -319,6 +516,7 @@ MODEL_CONFIGS = {
         "batch_size": 16,
         "lr_frozen": 1e-3,
         "lr_finetune": 1e-4,
+        "multi_label": False,
     },
     "skin_type": {
         "data_dir": "data/skin_type",
@@ -331,8 +529,12 @@ MODEL_CONFIGS = {
         "batch_size": 32,
         "lr_frozen": 1e-3,
         "lr_finetune": 1e-4,
+        "multi_label": False,
     },
     "skin_issues": {
+        # DEPRECATED: single-label 5-class model. Kept so old checkpoints still
+        # train, but the app now uses `skin_conditions` (multi-label) instead.
+        # See data/skin_issues/README.md for why.
         "data_dir": "data/skin_issues",
         "class_names": {0: "blackheads", 1: "dark_spots", 2: "healthy", 3: "pores", 4: "wrinkles"},
         "num_classes": 5,
@@ -343,6 +545,24 @@ MODEL_CONFIGS = {
         "batch_size": 32,
         "lr_frozen": 1e-3,
         "lr_finetune": 1e-4,
+        "multi_label": False,
+    },
+    "skin_conditions": {
+        # Multi-label: independently detects pores and blackheads. Each output
+        # is a sigmoid; both, one, or neither can fire. See
+        # data/skin_conditions/README.md for the dataset design.
+        "data_dir": "data/skin_conditions",
+        "class_names": {0: "blackheads", 1: "pores"},  # alphabetical, matches folder walk
+        "negative_class": "negative",  # folder whose labels are all-zero
+        "num_classes": 2,
+        "checkpoint_name": "skin_conditions_model_best.pth",
+        "has_splits": False,
+        "epochs_frozen": 8,
+        "epochs_finetune": 6,
+        "batch_size": 32,
+        "lr_frozen": 1e-3,
+        "lr_finetune": 1e-4,
+        "multi_label": True,
     },
 }
 
@@ -389,15 +609,32 @@ def train_model(model_name: str, resume: bool = False, epochs: Optional[int] = N
 
     data_dir = Path(config["data_dir"])
     class_names = config["class_names"]
+    multi_label = config.get("multi_label", False)
 
-    # Build class_to_idx from sorted class names (alphabetical for consistency)
+    # Build class_to_idx from sorted class names (alphabetical for consistency).
+    # For multi-label we also honour a `negative_class` folder for all-zero labels.
     sorted_classes = sorted(class_names.values())
     class_to_idx = {name: idx for idx, name in enumerate(sorted_classes)}
     idx_to_class = {idx: name for name, idx in class_to_idx.items()}
     print(f"\nClasses: {idx_to_class}")
+    if multi_label:
+        print(f"Mode: MULTI-LABEL (BCE + sigmoid, threshold 0.5, macro-F1)")
 
     # ── Data Loading ─────────────────────────────────────────────
-    if config["has_splits"]:
+    if multi_label:
+        all_samples = collect_multi_label_samples(
+            data_dir, idx_to_class, config.get("negative_class")
+        )
+        # Stratify by argmax of label vector (or -1 for all-zero negatives)
+        # so each split contains representatives of every folder.
+        strat = [int(np.argmax(lbl)) if lbl.sum() > 0 else -1 for _, lbl in all_samples]
+        train_samples, temp_samples, _, temp_strat = train_test_split(
+            all_samples, strat, test_size=0.30, random_state=42, stratify=strat
+        )
+        val_samples, test_samples = train_test_split(
+            temp_samples, test_size=0.50, random_state=42, stratify=temp_strat
+        )
+    elif config["has_splits"]:
         train_samples = collect_samples(data_dir / "train", class_to_idx)
         val_samples = collect_samples(data_dir / "valid", class_to_idx)
         test_samples = collect_samples(data_dir / "test", class_to_idx)
@@ -417,28 +654,53 @@ def train_model(model_name: str, resume: bool = False, epochs: Optional[int] = N
     print(f"  Val:   {len(val_samples)}")
     print(f"  Test:  {len(test_samples)}")
 
-    train_dist = Counter(s[1] for s in train_samples)
-    print(f"\nTrain distribution:")
-    for idx in sorted(train_dist.keys()):
-        print(f"  {idx_to_class[idx]:15s}: {train_dist[idx]}")
+    if multi_label:
+        # Positives per output column across the training split.
+        pos_counts = np.zeros(len(idx_to_class), dtype=np.int64)
+        for _, lbl in train_samples:
+            pos_counts += lbl.astype(np.int64)
+        neg_counts = len(train_samples) - pos_counts
+        print(f"\nTrain distribution (multi-label):")
+        for idx, name in idx_to_class.items():
+            print(f"  {name:15s}: pos={pos_counts[idx]}  neg={neg_counts[idx]}")
+    else:
+        train_dist = Counter(s[1] for s in train_samples)
+        print(f"\nTrain distribution:")
+        for idx in sorted(train_dist.keys()):
+            print(f"  {idx_to_class[idx]:15s}: {train_dist[idx]}")
 
     # Create datasets and loaders
-    train_ds = ImageFolderDataset(train_samples, transform=get_train_transform())
-    val_ds = ImageFolderDataset(val_samples, transform=get_eval_transform())
-    test_ds = ImageFolderDataset(test_samples, transform=get_eval_transform())
+    if multi_label:
+        train_ds = MultiLabelImageFolderDataset(train_samples, transform=get_train_transform())
+        val_ds = MultiLabelImageFolderDataset(val_samples, transform=get_eval_transform())
+        test_ds = MultiLabelImageFolderDataset(test_samples, transform=get_eval_transform())
+    else:
+        train_ds = ImageFolderDataset(train_samples, transform=get_train_transform())
+        val_ds = ImageFolderDataset(val_samples, transform=get_eval_transform())
+        test_ds = ImageFolderDataset(test_samples, transform=get_eval_transform())
 
     bs = config["batch_size"]
     train_loader = DataLoader(train_ds, batch_size=bs, shuffle=True, num_workers=0, pin_memory=True)
     val_loader = DataLoader(val_ds, batch_size=bs, shuffle=False, num_workers=0, pin_memory=True)
     test_loader = DataLoader(test_ds, batch_size=bs, shuffle=False, num_workers=0, pin_memory=True)
 
-    # Class weights for imbalanced data
-    train_labels = np.array(train_ds.targets)
-    unique_classes = np.unique(train_labels)
-    weights = compute_class_weight("balanced", classes=unique_classes, y=train_labels)
-    weights_tensor = torch.tensor(weights, dtype=torch.float).to(device)
-    print(f"\nClass weights: {dict(zip([idx_to_class[i] for i in unique_classes], weights.round(3)))}")
-    criterion = nn.CrossEntropyLoss(weight=weights_tensor)
+    # Loss + class balancing
+    if multi_label:
+        # BCE with per-class pos_weight = negatives / positives (see
+        # https://pytorch.org/docs/stable/generated/torch.nn.BCEWithLogitsLoss.html).
+        # Clamp to sane range so a rare class doesn't get an absurdly large weight.
+        pos_weight_vals = np.clip(neg_counts / np.maximum(pos_counts, 1), 0.1, 10.0)
+        pos_weight = torch.tensor(pos_weight_vals, dtype=torch.float).to(device)
+        print(f"\nBCE pos_weight per class: "
+              f"{dict(zip([idx_to_class[i] for i in range(len(idx_to_class))], pos_weight_vals.round(3)))}")
+        criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+    else:
+        train_labels = np.array(train_ds.targets)
+        unique_classes = np.unique(train_labels)
+        weights = compute_class_weight("balanced", classes=unique_classes, y=train_labels)
+        weights_tensor = torch.tensor(weights, dtype=torch.float).to(device)
+        print(f"\nClass weights: {dict(zip([idx_to_class[i] for i in unique_classes], weights.round(3)))}")
+        criterion = nn.CrossEntropyLoss(weight=weights_tensor)
 
     # Checkpoint path
     ckpt_dir = Path("model_service/checkpoints")
@@ -490,7 +752,8 @@ def train_model(model_name: str, resume: bool = False, epochs: Optional[int] = N
 
         frozen_path = str(ckpt_dir / f"{model_name}_frozen.pth")
         model = train_phase(model, train_loader, val_loader, criterion, optimizer, scheduler,
-                            config["epochs_frozen"], device, frozen_path, "Phase 1")
+                            config["epochs_frozen"], device, frozen_path, "Phase 1",
+                            multi_label=multi_label)
 
         # Transition to Phase 2
         print(f"\n{'─'*40}")
@@ -511,10 +774,14 @@ def train_model(model_name: str, resume: bool = False, epochs: Optional[int] = N
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, factor=0.5)
 
     model = train_phase(model, train_loader, val_loader, criterion, optimizer, scheduler,
-                        config["epochs_finetune"], device, best_path, "Phase 2")
+                        config["epochs_finetune"], device, best_path, "Phase 2",
+                        multi_label=multi_label)
 
     # ── Final Test ───────────────────────────────────────────────
-    final_test(model, test_loader, device, idx_to_class)
+    if multi_label:
+        final_test_multi_label(model, test_loader, device, idx_to_class)
+    else:
+        final_test(model, test_loader, device, idx_to_class)
     print(f"\n✓ Model saved to: {best_path}")
     return model
 
@@ -540,7 +807,7 @@ Examples:
     )
     parser.add_argument(
         "--model", type=str, required=True,
-        choices=["acne", "skin_type", "skin_issues", "all"],
+        choices=["acne", "skin_type", "skin_issues", "skin_conditions", "all"],
         help="Which model to train",
     )
     parser.add_argument(
@@ -564,7 +831,9 @@ Examples:
     start = time.time()
 
     if args.model == "all":
-        for name in ["acne", "skin_type", "skin_issues"]:
+        # Trains the three active models. The legacy `skin_issues` model is
+        # excluded — it's superseded by `skin_conditions` (multi-label).
+        for name in ["acne", "skin_type", "skin_conditions"]:
             train_model(name, resume=args.resume, epochs=args.epochs,
                         lr=args.lr, batch_size=args.batch_size)
     else:

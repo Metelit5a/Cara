@@ -14,7 +14,11 @@ from PIL import Image
 import io
 import numpy as np
 
-from shared.schemas import AnalysisStatus, ModelPrediction
+from shared.schemas import (
+    AnalysisStatus,
+    ModelPrediction,
+    MultiLabelPrediction,
+)
 from backend.blp.engine import BLPEngine
 from backend.report_generation.builder import ReportBuilder
 from model_service.inference.orchestrator import InferenceOrchestrator
@@ -41,17 +45,24 @@ class TestPipelineIntegration:
             assert tensor.shape == (3, 224, 224), f"Failed for size {size}"
 
     def test_predict_all_returns_dict_or_empty(self):
-        """predict_all returns a dict (empty if no models loaded)."""
+        """predict_all returns a dict (empty if no models loaded).
+
+        Values are either `ModelPrediction` (single-label) or
+        `MultiLabelPrediction` (skin_conditions).
+        """
         import torch
         orchestrator = InferenceOrchestrator()
         tensor = torch.randn(1, 3, 224, 224)
         result = orchestrator.predict_all(tensor)
         assert isinstance(result, dict)
-        # Each value should be a ModelPrediction
         for name, pred in result.items():
-            assert isinstance(pred, ModelPrediction)
-            assert 0.0 <= pred.confidence <= 1.0
-            assert len(pred.all_probabilities) > 0
+            if isinstance(pred, MultiLabelPrediction):
+                assert 0 <= len(pred.findings) <= 5
+                assert all(0.0 <= s <= 1.0 for s in pred.all_scores.values())
+            else:
+                assert isinstance(pred, ModelPrediction)
+                assert 0.0 <= pred.confidence <= 1.0
+                assert len(pred.all_probabilities) > 0
 
     def test_blp_then_report_builder_integration(self):
         """BLP result feeds correctly into ReportBuilder."""
@@ -125,9 +136,10 @@ class TestModelPredictionContract:
         )
         assert len(pred4.all_probabilities) == 4
 
-        # 5 classes (skin_issues)
-        pred5 = ModelPrediction(
-            model_name="skin_issues", predicted_class=2, predicted_label="healthy",
-            confidence=0.7, all_probabilities=[0.1, 0.05, 0.7, 0.1, 0.05]
+        # 2 classes (skin_conditions — but note this schema is for single-label
+        # models; the multi-label output uses `MultiLabelPrediction` instead).
+        pred2 = ModelPrediction(
+            model_name="dummy", predicted_class=1, predicted_label="b",
+            confidence=0.7, all_probabilities=[0.3, 0.7]
         )
-        assert len(pred5.all_probabilities) == 5
+        assert len(pred2.all_probabilities) == 2

@@ -1,44 +1,42 @@
 {
   "_comment": [
     "Ground-truth labels for real-world face photos in `image tests people/`.",
-    "These are the 'production distribution' — normal selfies/portraits.",
-    "Every image in this file is a manually reviewed adult face with clearly",
-    "visible skin. Labels reflect what a human dermatology reviewer would say.",
+    "Every image here is a manually reviewed adult face with clearly visible skin.",
     "",
     "Fields:",
-    "  acne         — expected acne severity: clear | mild | moderate | severe",
-    "  skin_type    — expected type: dry | oily | normal | combination",
-    "  skin_issues  — a list of ALL acceptable predictions. If the person's face",
-    "                 has no visible issue, use ['healthy']. If there is some",
-    "                 minor imperfection, list every plausible interpretation.",
+    "  acne             — expected acne severity: clear | mild | moderate | severe",
+    "  skin_type        — expected type: dry | oily | normal | combination",
+    "  skin_conditions  — EXPECTED multi-label findings. A list of the",
+    "                     conditions that SHOULD be present. Empty list `[]`",
+    "                     means 'no notable conditions' (the good case).",
+    "                     Allowed values: pores, blackheads.",
     "",
-    "Add new images here as you collect them — the tests will pick them up",
-    "automatically. If unsure about a label, leave the field as null and the",
-    "test will skip that assertion for that image."
+    "Any field set to null is skipped by the tests, so partially-labelled",
+    "images are fine. Add new photos + labels as you collect them."
   ],
   "images": {
     "woman_pic_1.jpg": {
       "acne": "clear",
       "skin_type": "dry",
-      "skin_issues": ["healthy"],
+      "skin_conditions": [],
       "notes": "Clear, matte, well-lit portrait. No visible blemishes."
     },
     "images (2).jpg": {
       "acne": "clear",
       "skin_type": null,
-      "skin_issues": ["healthy"],
+      "skin_conditions": [],
       "notes": "Mid-adult woman, clean skin. Minor natural lines around eyes only."
     },
     "images (4).jpg": {
       "acne": "clear",
       "skin_type": null,
-      "skin_issues": ["healthy"],
+      "skin_conditions": [],
       "notes": "Young adult male, clear skin, no visible acne."
     },
     "images (5).jpg": {
       "acne": "clear",
       "skin_type": null,
-      "skin_issues": ["healthy"],
+      "skin_conditions": [],
       "notes": "Young adult male, clear skin, no visible acne."
     }
   }

@@ -109,18 +109,36 @@ function ResultsPage() {
         </div>
       )}
 
-      {/* Skin Issues */}
-      {report.skin_issue && (
-        <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h2>Skin Condition</h2>
-            <span className={`severity-badge severity-${report.skin_issue}`}>
-              {report.skin_issue.replace('_', ' ')}
+      {/* Skin Conditions (multi-label: 0, 1, or 2 findings) */}
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h2>Skin Conditions</h2>
+          {report.skin_conditions?.length > 0 ? (
+            <span className="severity-badge severity-mild">
+              {report.skin_conditions.length} finding{report.skin_conditions.length > 1 ? 's' : ''}
             </span>
-          </div>
-          <ConfidenceMeter confidence={report.skin_issue_confidence} />
+          ) : (
+            <span className="severity-badge severity-clear">none detected</span>
+          )}
         </div>
-      )}
+
+        {report.skin_conditions?.length > 0 ? (
+          report.skin_conditions.map((finding, i) => (
+            <div key={i} style={{ marginBottom: i === report.skin_conditions.length - 1 ? 0 : '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ textTransform: 'capitalize', fontWeight: 500 }}>
+                  {finding.label.replace('_', ' ')}
+                </span>
+              </div>
+              <ConfidenceMeter confidence={finding.confidence} />
+            </div>
+          ))
+        ) : (
+          <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', margin: 0 }}>
+            No pores or blackheads detected above the confidence threshold.
+          </p>
+        )}
+      </div>
 
       {/* Combined Explanation */}
       <div className="card">

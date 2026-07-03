@@ -22,3 +22,17 @@ Runs on: http://localhost:3000
 --------
 source .venv/bin/activate
 python -m pytest tests/ -v
+
+# Real-world regression tests — run the pipeline on hand-labelled selfies from
+# `image tests people/` (see `tests/fixtures/real_world_labels.json`). Catches
+# model regressions that training-data tests can miss.
+python -m pytest tests/test_real_world_regression.py -v
+
+
+4. Training
+-----------
+source .venv/bin/activate
+python -m model_service.training.train --model acne              # single-label
+python -m model_service.training.train --model skin_type         # single-label
+python -m model_service.training.train --model skin_conditions   # multi-label (pores + blackheads)
+python -m model_service.training.train --model all               # all three active models

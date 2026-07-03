@@ -1,8 +1,15 @@
-"""Tests for the BLP Engine with new 3-model architecture."""
+"""Tests for the BLP Engine with the multi-label skin_conditions model."""
 
 import pytest
 from backend.blp.engine import BLPEngine
-from shared.schemas import ModelPrediction, AcneSeverity, SkinType, SkinIssue
+from shared.schemas import (
+    ModelPrediction,
+    MultiLabelPrediction,
+    SkinConditionFinding,
+    AcneSeverity,
+    SkinType,
+    SkinCondition,
+)
 
 
 @pytest.fixture
@@ -11,11 +18,10 @@ def engine():
 
 
 def _make_prediction(model_name: str, label: str, confidence: float) -> ModelPrediction:
-    """Helper to create a ModelPrediction with sensible defaults."""
+    """Helper to create a single-label ModelPrediction."""
     class_maps = {
         "acne": ["clear", "mild", "moderate", "severe"],
         "skin_type": ["combination", "dry", "normal", "oily"],
-        "skin_issues": ["blackheads", "dark_spots", "healthy", "pores", "wrinkles"],
     }
     classes = class_maps[model_name]
     idx = classes.index(label)
@@ -27,6 +33,28 @@ def _make_prediction(model_name: str, label: str, confidence: float) -> ModelPre
         predicted_label=label,
         confidence=confidence,
         all_probabilities=probs,
+    )
+
+
+def _make_multi_label(*findings) -> MultiLabelPrediction:
+    """Build a MultiLabelPrediction from (label, confidence) tuples.
+
+    Examples:
+        _make_multi_label()                                     # empty (clean)
+        _make_multi_label(("pores", 0.9))                       # one finding
+        _make_multi_label(("pores", 0.8), ("blackheads", 0.7))  # both
+    """
+    all_scores = {"blackheads": 0.0, "pores": 0.0}
+    findings_list = []
+    for label, conf in findings:
+        all_scores[label] = conf
+        findings_list.append(
+            SkinConditionFinding(label=SkinCondition(label), confidence=conf)
+        )
+    return MultiLabelPrediction(
+        model_name="skin_conditions",
+        findings=findings_list,
+        all_scores=all_scores,
     )
 
 
@@ -62,24 +90,39 @@ class TestBLPBasicProcessing:
         ingredients = [r.ingredient for r in result.recommendations]
         assert any("Hyaluronic" in i for i in ingredients)
 
-    def test_skin_issue_healthy_no_recommendations(self, engine):
-        predictions = {"skin_issues": _make_prediction("skin_issues", "healthy", 0.8)}
+
+class TestBLPSkinConditionsMultiLabel:
+    """New multi-label semantics — 0, 1, or 2 findings."""
+
+    def test_no_findings_yields_no_condition_recommendations(self, engine):
+        """Empty findings list = 'no notable conditions', report says nothing."""
+        predictions = {"skin_conditions": _make_multi_label()}
         result = engine.process(predictions)
-        assert result.skin_issue == SkinIssue.HEALTHY
+        assert result.skin_conditions == []
         assert len(result.recommendations) == 0
 
-    def test_skin_issue_blackheads(self, engine):
-        predictions = {"skin_issues": _make_prediction("skin_issues", "blackheads", 0.7)}
+    def test_pores_only(self, engine):
+        predictions = {"skin_conditions": _make_multi_label(("pores", 0.9))}
         result = engine.process(predictions)
-        assert result.skin_issue == SkinIssue.BLACKHEADS
-        assert len(result.recommendations) > 0
+        assert result.skin_conditions == [SkinCondition.PORES]
+        assert any("Niacinamide" in r.ingredient for r in result.recommendations)
 
-    def test_skin_issue_dark_spots_recommends_vitamin_c(self, engine):
-        predictions = {"skin_issues": _make_prediction("skin_issues", "dark_spots", 0.6)}
+    def test_blackheads_only(self, engine):
+        predictions = {"skin_conditions": _make_multi_label(("blackheads", 0.85))}
         result = engine.process(predictions)
-        assert result.skin_issue == SkinIssue.DARK_SPOTS
+        assert result.skin_conditions == [SkinCondition.BLACKHEADS]
+        assert any("Salicylic" in r.ingredient for r in result.recommendations)
+
+    def test_both_pores_and_blackheads(self, engine):
+        """The whole point of multi-label: report BOTH when both are present."""
+        predictions = {
+            "skin_conditions": _make_multi_label(("pores", 0.8), ("blackheads", 0.75))
+        }
+        result = engine.process(predictions)
+        assert set(result.skin_conditions) == {SkinCondition.PORES, SkinCondition.BLACKHEADS}
         ingredients = [r.ingredient for r in result.recommendations]
-        assert any("Vitamin C" in i for i in ingredients)
+        assert len(ingredients) == len(set(ingredients))
+        assert len(ingredients) > 0
 
 
 class TestBLPMultiModel:
@@ -87,29 +130,31 @@ class TestBLPMultiModel:
         predictions = {
             "acne": _make_prediction("acne", "mild", 0.7),
             "skin_type": _make_prediction("skin_type", "oily", 0.8),
-            "skin_issues": _make_prediction("skin_issues", "blackheads", 0.6),
+            "skin_conditions": _make_multi_label(("blackheads", 0.75)),
         }
         result = engine.process(predictions)
         assert result.acne_severity == AcneSeverity.MILD
         assert result.skin_type == SkinType.OILY
-        assert result.skin_issue == SkinIssue.BLACKHEADS
+        assert result.skin_conditions == [SkinCondition.BLACKHEADS]
         assert len(result.recommendations) > 3
 
-    def test_healthy_across_all_models(self, engine):
+    def test_clean_skin_across_all_models(self, engine):
+        """Clear acne + normal skin + no conditions → minimal report."""
         predictions = {
             "acne": _make_prediction("acne", "clear", 0.9),
             "skin_type": _make_prediction("skin_type", "normal", 0.85),
-            "skin_issues": _make_prediction("skin_issues", "healthy", 0.8),
+            "skin_conditions": _make_multi_label(),
         }
         result = engine.process(predictions)
         assert result.acne_severity == AcneSeverity.CLEAR
         assert result.skin_type == SkinType.NORMAL
-        assert result.skin_issue == SkinIssue.HEALTHY
+        assert result.skin_conditions == []
 
     def test_no_duplicate_ingredients(self, engine):
         predictions = {
             "acne": _make_prediction("acne", "mild", 0.7),
             "skin_type": _make_prediction("skin_type", "oily", 0.8),
+            "skin_conditions": _make_multi_label(("pores", 0.9)),
         }
         result = engine.process(predictions)
         ingredients = [r.ingredient for r in result.recommendations]
@@ -152,11 +197,13 @@ class TestBLPAllRulesReachable:
             result = engine.process(preds)
             assert result.skin_type == SkinType(stype)
 
-    def test_all_skin_issue_rules(self, engine):
-        for issue in ["healthy", "blackheads", "dark_spots", "pores", "wrinkles"]:
-            preds = {"skin_issues": _make_prediction("skin_issues", issue, 0.8)}
+    def test_all_skin_condition_rules(self, engine):
+        """Both multi-label classes should produce non-empty recommendations."""
+        for cond in ["pores", "blackheads"]:
+            preds = {"skin_conditions": _make_multi_label((cond, 0.8))}
             result = engine.process(preds)
-            assert result.skin_issue == SkinIssue(issue)
+            assert SkinCondition(cond) in result.skin_conditions
+            assert len(result.recommendations) > 0
 
     def test_empty_predictions(self, engine):
         result = engine.process({})

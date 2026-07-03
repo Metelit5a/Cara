@@ -14,7 +14,7 @@ detected we return a NO_FACE status so the user can retake the photo.
 
 import logging
 
-from shared.schemas import AnalysisReport, AnalysisStatus
+from shared.schemas import AnalysisReport, AnalysisStatus, ModelPrediction, MultiLabelPrediction
 from model_service.inference.orchestrator import get_orchestrator
 from model_service.preprocessing.pipeline import get_pipeline
 from backend.blp.engine import get_blp_engine
@@ -64,12 +64,23 @@ class AnalysisService:
             await self.repository.save_report(report)
             return report
 
-        # Step 3: Check confidence — at least one model must pass threshold
+        # Step 3: Check confidence — at least one signal must be usable.
+        #
+        # For single-label models: `confidence >= threshold` on the argmax.
+        # For multi-label models: at least one class score >= its threshold
+        #   (i.e. a non-empty `findings` list, or "we detected something").
+        # If neither the single-label nor multi-label models had anything
+        # confident, we return a low-confidence report so the user can retry.
         blp_engine = get_blp_engine()
-        any_confident = any(
-            pred.confidence >= blp_engine.confidence_threshold
-            for pred in predictions.values()
-        )
+
+        def _prediction_is_confident(pred) -> bool:
+            if isinstance(pred, MultiLabelPrediction):
+                return len(pred.findings) > 0
+            if isinstance(pred, ModelPrediction):
+                return pred.confidence >= blp_engine.confidence_threshold
+            return False
+
+        any_confident = any(_prediction_is_confident(p) for p in predictions.values())
 
         if not any_confident:
             report = ReportBuilder.build_low_confidence_report(

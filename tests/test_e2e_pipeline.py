@@ -19,19 +19,25 @@ from PIL import Image
 
 from backend.blp.engine import BLPEngine
 from backend.report_generation.builder import ReportBuilder
-from shared.schemas import AnalysisStatus, AcneSeverity, SkinIssue
+from shared.schemas import AnalysisStatus, AcneSeverity, MultiLabelPrediction
 
 CHECKPOINT_DIR = Path("model_service/checkpoints")
 DATA_DIR = Path("data")
 
-# Only run if all models are available
-requires_all_models = pytest.mark.skipif(
+# Only run if both single-label checkpoints are available. The multi-label
+# `skin_conditions` checkpoint is optional — tests that need it use a
+# separate skip marker so this file still runs before the first multi-label
+# training run finishes.
+requires_core_models = pytest.mark.skipif(
     not all((
         (CHECKPOINT_DIR / "acne_model_best.pth").exists(),
         (CHECKPOINT_DIR / "skin_type_model_best.pth").exists(),
-        (CHECKPOINT_DIR / "skin_issues_model_best.pth").exists(),
     )),
-    reason="Not all model checkpoints available",
+    reason="Core model checkpoints (acne, skin_type) not available",
+)
+requires_skin_conditions = pytest.mark.skipif(
+    not (CHECKPOINT_DIR / "skin_conditions_model_best.pth").exists(),
+    reason="skin_conditions checkpoint not trained yet",
 )
 
 
@@ -62,7 +68,7 @@ def _run_full_pipeline(image_path: Path) -> dict:
     }
 
 
-@requires_all_models
+@requires_core_models
 class TestEndToEndPipeline:
     """Full pipeline tests with ground truth images."""
 
@@ -88,11 +94,17 @@ class TestEndToEndPipeline:
         # Clear skin should not have severe acne
         assert report.acne_severity != AcneSeverity.SEVERE
 
-    def test_blackheads_image_detects_skin_issue(self):
-        """A blackheads image should be detected as blackheads by skin_issues model."""
-        blackheads_dir = DATA_DIR / "skin_issues" / "blackheads"
+    @requires_skin_conditions
+    def test_blackheads_image_flagged_by_multi_label_model(self):
+        """A blackheads training image should trigger the blackheads finding.
+
+        Uses training data — this is a smoke test for the multi-label
+        model, NOT proof of real-world generalisation. The real-world
+        generalisation test lives in `test_real_world_regression.py`.
+        """
+        blackheads_dir = DATA_DIR / "skin_conditions" / "blackheads"
         if not blackheads_dir.exists():
-            pytest.skip("Blackheads images not available")
+            pytest.skip("Blackheads training images not available")
 
         images = [p for p in blackheads_dir.iterdir() if p.suffix.lower() in {".jpg", ".jpeg", ".png"}]
         if not images:
@@ -100,34 +112,17 @@ class TestEndToEndPipeline:
 
         result = _run_full_pipeline(images[0])
         report = result["report"]
+        skin_pred = result["predictions"].get("skin_conditions")
 
         assert report.status == AnalysisStatus.SUCCESS
-        # The skin issues model should detect blackheads
-        assert report.skin_issue == SkinIssue.BLACKHEADS
-        # And provide relevant recommendations
-        assert len(report.recommendations) > 0
-
-    def test_wrinkles_image_gets_anti_aging_recommendations(self):
-        """A wrinkles image should get retinol/peptide recommendations."""
-        wrinkles_dir = DATA_DIR / "skin_issues" / "wrinkles"
-        if not wrinkles_dir.exists():
-            pytest.skip("Wrinkles images not available")
-
-        images = [p for p in wrinkles_dir.iterdir() if p.suffix.lower() in {".jpg", ".jpeg", ".png"}]
-        if not images:
-            pytest.skip("No images found")
-
-        result = _run_full_pipeline(images[0])
-        report = result["report"]
-
-        assert report.status == AnalysisStatus.SUCCESS
-        assert report.skin_issue == SkinIssue.WRINKLES
-        # Should recommend retinol or peptides for wrinkles
-        ingredients = [r.ingredient for r in report.recommendations]
-        has_anti_aging = any(
-            "Retinol" in i or "Peptide" in i for i in ingredients
+        assert isinstance(skin_pred, MultiLabelPrediction), (
+            "skin_conditions must return a MultiLabelPrediction"
         )
-        assert has_anti_aging, f"Expected anti-aging ingredient, got: {ingredients}"
+        finding_labels = {f.label.value for f in skin_pred.findings}
+        assert "blackheads" in finding_labels, (
+            f"Expected blackheads in findings, got {finding_labels}. "
+            f"Raw scores: {skin_pred.all_scores}"
+        )
 
     def test_pipeline_handles_different_image_sizes(self):
         """Pipeline should handle various image dimensions without crashing."""
@@ -193,7 +188,7 @@ class TestEndToEndPipeline:
             assert isinstance(report.recommendations, list)
 
 
-@requires_all_models
+@requires_core_models
 class TestPipelineRobustness:
     """Test pipeline robustness under edge cases."""
 
@@ -224,13 +219,16 @@ class TestPipelineRobustness:
         assert result is not None
 
     def test_all_models_loaded_and_functional(self):
-        """Verify all 3 models are loaded and producing predictions."""
+        """Verify the core models are loaded and producing predictions.
+
+        `skin_conditions` is optional (may not be trained yet) — its
+        presence is checked separately below.
+        """
         from model_service.inference.orchestrator import InferenceOrchestrator
 
         orchestrator = InferenceOrchestrator()
         assert "acne" in orchestrator.loaded_models
         assert "skin_type" in orchestrator.loaded_models
-        assert "skin_issues" in orchestrator.loaded_models
 
         img = Image.new("RGB", (300, 300), color=(180, 150, 130))
         tensor = orchestrator.transform(img)
@@ -238,4 +236,9 @@ class TestPipelineRobustness:
 
         assert "acne" in predictions
         assert "skin_type" in predictions
-        assert "skin_issues" in predictions
+
+        # If the multi-label checkpoint exists it must return a
+        # MultiLabelPrediction — the whole point of the refactor.
+        if (CHECKPOINT_DIR / "skin_conditions_model_best.pth").exists():
+            assert "skin_conditions" in predictions
+            assert isinstance(predictions["skin_conditions"], MultiLabelPrediction)
