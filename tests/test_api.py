@@ -1,9 +1,11 @@
 """Tests for the API endpoints."""
 
+import io
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
-import io
 
 from backend.main import app
 
@@ -20,6 +22,15 @@ def sample_jpeg_bytes():
     buf = io.BytesIO()
     img.save(buf, format="JPEG")
     return buf.getvalue()
+
+
+@pytest.fixture(autouse=True)
+def reset_user_store():
+    users_file = Path("storage/users.json")
+    users_file.parent.mkdir(parents=True, exist_ok=True)
+    users_file.write_text("[]", encoding="utf-8")
+    yield
+    users_file.write_text("[]", encoding="utf-8")
 
 
 @pytest.fixture
@@ -86,6 +97,40 @@ class TestHealthEndpoint:
         assert data["status"] == "healthy"
         assert "models_loaded" in data
         assert "version" in data
+
+
+class TestAuthEndpoints:
+    def test_register_creates_user(self, client):
+        response = client.post(
+            "/api/v1/auth/register",
+            json={
+                "username": "testuser",
+                "email": "test@example.com",
+                "password": "secret123",
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["message"] == "User registered successfully"
+
+    def test_login_returns_access_token(self, client):
+        client.post(
+            "/api/v1/auth/register",
+            json={
+                "username": "testuser",
+                "email": "test@example.com",
+                "password": "secret123",
+            },
+        )
+
+        response = client.post(
+            "/api/v1/auth/login",
+            json={"email": "test@example.com", "password": "secret123"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["token_type"] == "bearer"
+        assert "access_token" in data
 
 
 class TestReportEndpoints:
