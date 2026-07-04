@@ -4,6 +4,8 @@ import HomePage from './pages/HomePage';
 import AnalyzePage from './pages/AnalyzePage';
 import ResultsPage from './pages/ResultsPage';
 import HistoryPage from './pages/HistoryPage';
+import Login from './pages/Login';
+import Register from './pages/Register';
 
 function App() {
   return (
@@ -16,6 +18,7 @@ function App() {
               <NavLink to="/" className={({ isActive }) => isActive ? 'active' : ''}>Home</NavLink>
               <NavLink to="/analyze" className={({ isActive }) => isActive ? 'active' : ''}>Analyze</NavLink>
               <NavLink to="/history" className={({ isActive }) => isActive ? 'active' : ''}>History</NavLink>
+              <NavLink to="/login" className={({ isActive }) => isActive ? 'active' : ''}>Login</NavLink>
             </nav>
           </div>
         </header>
@@ -26,6 +29,8 @@ function App() {
             <Route path="/analyze" element={<AnalyzePage />} />
             <Route path="/results/:reportId" element={<ResultsPage />} />
             <Route path="/history" element={<HistoryPage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
           </Routes>
         </main>
 
