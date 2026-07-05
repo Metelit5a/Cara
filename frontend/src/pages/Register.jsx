@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
-function Register() {
+function Register({ authValue }) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const [error, setError] = useState('');
@@ -30,7 +30,18 @@ function Register() {
         throw new Error(data.detail || 'Registration failed');
       }
 
-      localStorage.setItem('access_token', data.access_token || '');
+      const loginResponse = await fetch('http://localhost:8000/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, password: formData.password }),
+      });
+
+      const loginData = await loginResponse.json();
+      if (!loginResponse.ok) {
+        throw new Error(loginData.detail || 'Login failed');
+      }
+
+      authValue.login(loginData.access_token, formData.username);
       navigate('/');
     } catch (err) {
       setError(err.message || 'Unexpected error');

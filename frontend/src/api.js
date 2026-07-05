@@ -4,9 +4,11 @@ export async function analyzeImage(file) {
   const formData = new FormData();
   formData.append('file', file);
 
+  const token = localStorage.getItem('access_token');
   const response = await fetch(`${API_BASE}/analyze`, {
     method: 'POST',
     body: formData,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 
   if (!response.ok) {
@@ -18,7 +20,10 @@ export async function analyzeImage(file) {
 }
 
 export async function getReport(reportId) {
-  const response = await fetch(`${API_BASE}/report/${reportId}`);
+  const token = localStorage.getItem('access_token');
+  const response = await fetch(`${API_BASE}/report/${reportId}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
   if (!response.ok) {
     throw new Error('Report not found');
   }
@@ -26,7 +31,10 @@ export async function getReport(reportId) {
 }
 
 export async function listReports(limit = 50) {
-  const response = await fetch(`${API_BASE}/reports?limit=${limit}`);
+  const token = localStorage.getItem('access_token');
+  const response = await fetch(`${API_BASE}/reports?limit=${limit}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
   if (!response.ok) {
     throw new Error('Failed to fetch reports');
   }

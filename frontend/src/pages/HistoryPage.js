@@ -39,11 +39,17 @@ function HistoryPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
     listReports()
       .then(setReports)
       .catch(() => setReports([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [navigate]);
 
   if (loading) {
     return (
