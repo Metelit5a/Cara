@@ -3,12 +3,12 @@
     "id": "1",
     "username": "noas",
     "email": "noashaanan@gmail.com",
-    "hashed_password": "$2b$12$icEXHw0RTY0VlB/rqHVK6usMyNeDapzt8Vu9jko8jezvv1Q/ACPoO"
+    "hashed_password": "$2b$12$pKEHUVg0.OiTWfw7eNcbiOCvw.va9CfDxD4eza5iWEiUvQli1PDty"
   },
   {
     "id": "2",
     "username": "noas2",
     "email": "noashaanan@icloud.com",
-    "hashed_password": "$2b$12$.MAMw/guY9OsdZvJ.zA/U.cNWMKhfTNff/CpR8DDMocKMI9mYksUu"
+    "hashed_password": "$2b$12$Dq167zp18BJPJ2nHquuMmeYCzUaoe.qIr0Ow/k0rqUeSaYh32N.8G"
   }
 ]
