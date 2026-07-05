@@ -1,14 +1,23 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { analyzeImage } from '../api';
+import CameraCapture from '../components/CameraCapture';
 
 function AnalyzePage() {
+  const [mode, setMode] = useState('upload'); // 'upload' | 'camera'
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
+
+  const handleCameraCapture = (capturedFile, previewUrl) => {
+    setFile(capturedFile);
+    setPreview(previewUrl);
+    setError(null);
+    setMode('upload');
+  };
 
   const handleFileSelect = (e) => {
     const selected = e.target.files[0];
@@ -73,6 +82,21 @@ function AnalyzePage() {
     );
   }
 
+  if (mode === 'camera') {
+    return (
+      <div className="card">
+        <h2 style={{ marginBottom: '8px' }}>Live Camera Capture</h2>
+        <p style={{ color: 'var(--text-light)', marginBottom: '16px' }}>
+          Align your face inside the oval. We'll auto-capture once lighting and framing look right.
+        </p>
+        <CameraCapture
+          onCapture={handleCameraCapture}
+          onCancel={() => setMode('upload')}
+        />
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="card">
@@ -80,6 +104,26 @@ function AnalyzePage() {
         <p style={{ color: 'var(--text-light)', marginBottom: '20px' }}>
           For best results, use a well-lit, front-facing photo of your face.
         </p>
+
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+          <button
+            className="btn btn-outline"
+            style={{ flex: 1 }}
+            onClick={() => {
+              setError(null);
+              setMode('camera');
+            }}
+          >
+            📷 Use live camera
+          </button>
+          <button
+            className="btn btn-outline"
+            style={{ flex: 1 }}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            🖼️ Choose file
+          </button>
+        </div>
 
         <div className="photo-tips">
           <h4 className="photo-tips-title">Tips for the best results</h4>
