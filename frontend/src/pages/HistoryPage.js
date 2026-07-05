@@ -243,6 +243,7 @@ function HistoryPage() {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} minTickGap={16} />
                   <YAxis
+                    reversed={true}
                     domain={[1, 4]}
                     ticks={[1, 2, 3, 4]}
                     axisLine={false}
