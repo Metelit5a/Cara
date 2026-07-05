@@ -13,6 +13,7 @@ detected we return a NO_FACE status so the user can retake the photo.
 """
 
 import logging
+from typing import Optional
 
 from shared.schemas import AnalysisReport, AnalysisStatus, ModelPrediction, MultiLabelPrediction
 from model_service.inference.orchestrator import get_orchestrator
@@ -30,7 +31,7 @@ class AnalysisService:
     def __init__(self, repository: StorageRepository):
         self.repository = repository
 
-    async def analyze_image(self, image_bytes: bytes) -> AnalysisReport:
+    async def analyze_image(self, image_bytes: bytes, user_id: Optional[str] = None) -> AnalysisReport:
         """Run the full analysis pipeline on an uploaded image."""
 
         # Step 1: Face-crop preprocessing (produces a 224x224 face tensor)
@@ -46,7 +47,7 @@ class AnalysisService:
             else:
                 logger.error(f"Preprocessing failed: {preprocess_result.message}")
                 report = ReportBuilder.build_error_report(preprocess_result.message)
-            await self.repository.save_report(report)
+            await self.repository.save_report(report, user_id=user_id)
             return report
 
         # Step 2: Run all models on the cropped face tensor
@@ -56,12 +57,12 @@ class AnalysisService:
         except RuntimeError as e:
             logger.error(f"Model inference failed: {e}")
             report = ReportBuilder.build_error_report(str(e))
-            await self.repository.save_report(report)
+            await self.repository.save_report(report, user_id=user_id)
             return report
 
         if not predictions:
             report = ReportBuilder.build_error_report("No models are loaded. Please check model checkpoints.")
-            await self.repository.save_report(report)
+            await self.repository.save_report(report, user_id=user_id)
             return report
 
         # Step 3: Check confidence — at least one signal must be usable.
@@ -86,7 +87,7 @@ class AnalysisService:
             report = ReportBuilder.build_low_confidence_report(
                 predictions, blp_engine.low_confidence_message
             )
-            await self.repository.save_report(report)
+            await self.repository.save_report(report, user_id=user_id)
             return report
 
         # Step 4: Business Logic Processing
@@ -96,14 +97,14 @@ class AnalysisService:
         report = ReportBuilder.build_success_report(predictions, blp_result)
 
         # Step 6: Persist
-        await self.repository.save_report(report)
+        await self.repository.save_report(report, user_id=user_id)
 
         return report
 
-    async def get_report(self, report_id: str):
+    async def get_report(self, report_id: str, user_id: Optional[str] = None):
         """Retrieve a saved report by ID."""
-        return await self.repository.get_report(report_id)
+        return await self.repository.get_report(report_id, user_id=user_id)
 
-    async def list_reports(self, limit: int = 50):
+    async def list_reports(self, limit: int = 50, user_id: Optional[str] = None):
         """List recent reports."""
-        return await self.repository.list_reports(limit=limit)
+        return await self.repository.list_reports(limit=limit, user_id=user_id)

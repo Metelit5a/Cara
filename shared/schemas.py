@@ -124,6 +124,7 @@ class BLPResult(BaseModel):
 class AnalysisReport(BaseModel):
     """Complete analysis report returned to the user."""
     id: str
+    user_id: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     status: AnalysisStatus
     acne_severity: Optional[AcneSeverity] = None

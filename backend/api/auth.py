@@ -3,10 +3,11 @@
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import jwt
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from passlib.context import CryptContext
 
 from shared.schemas import Token, UserCreate, UserLogin
@@ -18,6 +19,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_users_file() -> Path:
@@ -53,10 +55,36 @@ def create_access_token(subject: str, expires_delta: timedelta | None = None) ->
         expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
     payload = {
-        "sub": subject,
+        "sub": str(subject),
         "exp": datetime.now(timezone.utc) + expires_delta,
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def get_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+) -> Optional[Dict[str, Any]]:
+    if credentials is None:
+        return None
+
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+    except jwt.PyJWTError as exc:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials") from exc
+
+    subject = payload.get("sub")
+    if not subject:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+    users = load_users()
+    user = next(
+        (u for u in users if str(u.get("id")) == str(subject) or u.get("email") == str(subject)),
+        None,
+    )
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    return user
 
 
 @router.post("/register", response_model=Dict[str, str])
@@ -86,5 +114,5 @@ async def login_user(user: UserLogin):
     if stored_user is None or not verify_password(user.password, stored_user["hashed_password"]):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
-    access_token = create_access_token(stored_user["email"])
+    access_token = create_access_token(stored_user["id"])
     return Token(access_token=access_token, token_type="bearer")
