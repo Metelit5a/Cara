@@ -6,12 +6,14 @@ GET  /api/v1/report/{id} - Retrieve a saved report
 GET  /api/v1/reports   - List all reports
 """
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
-from shared.schemas import AnalysisReport, AnalyzeResponse
-from backend.services.analysis_service import AnalysisService
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+
+from backend.api.auth import get_current_user
 from backend.database.repository import create_repository
+from backend.services.analysis_service import AnalysisService
+from shared.schemas import AnalysisReport, AnalyzeResponse
 
 router = APIRouter(prefix="/api/v1", tags=["analysis"])
 
@@ -31,7 +33,10 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)
-async def analyze_image(file: UploadFile = File(...)):
+async def analyze_image(
+    file: UploadFile = File(...),
+    current_user: Optional[Dict[str, Any]] = Depends(get_current_user),
+):
     """Upload a face image for skincare analysis."""
 
     # Validate content type
@@ -49,24 +54,39 @@ async def analyze_image(file: UploadFile = File(...)):
     if len(image_bytes) == 0:
         raise HTTPException(status_code=400, detail="Empty file uploaded.")
 
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
     service = _get_service()
-    report = await service.analyze_image(image_bytes)
+    report = await service.analyze_image(image_bytes, user_id=current_user["id"])
 
     return AnalyzeResponse(report=report)
 
 
 @router.get("/report/{report_id}", response_model=AnalysisReport)
-async def get_report(report_id: str):
+async def get_report(
+    report_id: str,
+    current_user: Optional[Dict[str, Any]] = Depends(get_current_user),
+):
     """Retrieve a previously generated report by ID."""
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
     service = _get_service()
-    report = await service.get_report(report_id)
+    report = await service.get_report(report_id, user_id=current_user["id"])
     if report is None:
         raise HTTPException(status_code=404, detail="Report not found.")
     return report
 
 
 @router.get("/reports", response_model=List[AnalysisReport])
-async def list_reports(limit: int = 50):
+async def list_reports(
+    limit: int = 50,
+    current_user: Optional[Dict[str, Any]] = Depends(get_current_user),
+):
     """List recent analysis reports."""
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
     service = _get_service()
-    return await service.list_reports(limit=min(limit, 100))
+    return await service.list_reports(limit=min(limit, 100), user_id=current_user["id"])

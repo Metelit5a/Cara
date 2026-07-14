@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
-function Login() {
+function Login({ authValue }) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
@@ -30,7 +30,7 @@ function Login() {
         throw new Error(data.detail || 'Login failed');
       }
 
-      localStorage.setItem('access_token', data.access_token);
+      authValue.login(data.access_token, formData.email.split('@')[0]);
       navigate('/');
     } catch (err) {
       setError(err.message || 'Unexpected error');
