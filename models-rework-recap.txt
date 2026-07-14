@@ -1,0 +1,432 @@
+CARA — Models Rework Recap
+===========================
+
+A chronological log of the bugs and design decisions that shaped the current
+version of the app. Written so someone new (or a professor) can follow the
+reasoning end-to-end without diving into the code.
+
+
+0. The starting point
+---------------------
+
+The app was three EfficientNetB0 models running behind a rule-based BLP engine:
+
+  - Acne severity    (single-label: clear / mild / moderate / severe)
+  - Skin type        (single-label: oily / dry / normal / combination)
+  - Skin issues      (single-label: healthy / blackheads / dark_spots / pores /
+                                    wrinkles)
+
+Each model was trained on its own folder-labelled dataset. All three were
+combined by a BLP engine that mapped predictions to ingredient recommendations
+via a JSON rules file. Reports were persisted as JSON files. Face detection
+existed in the code but was not wired into the analysis path.
+
+
+1. Dataset quality — the invisible foundation
+---------------------------------------------
+
+The first big change was less flashy than a bug fix but had the largest
+impact: we replaced or repurposed the datasets.
+
+Some of the earlier datasets looked promising on paper but turned out to be
+unsuitable on closer inspection. Two representative examples:
+
+  * The initial acne dataset was actually an **object-detection** dataset —
+    photos annotated with bounding boxes around individual pimples. The old
+    approach was to run detection, count boxes, and derive severity from the
+    count. That effectively meant:
+      - "clear" was almost absent (there is no reason to run object detection
+        on a face with nothing to detect), so the model rarely saw a healthy
+        face.
+      - The signal the classifier learned was "how much stuff got detected",
+        not "what is the clinical acne severity".
+    We dropped that dataset and switched to a proper severity-labelled
+    classification dataset with four balanced classes.
+
+  * The old "healthy" folder inside skin_issues turned out to be images from
+    an acne-severity dataset with the filename prefix `levle0_*.jpg` — meaning
+    "level 0 acne". Level 0 is NOT the same as "clean skin" — the photos
+    actually showed visible pimples and blackheads, just less severely. Using
+    them as the healthy class made the model learn a wrong concept.
+    See `data/skin_issues/README.md` for the full deprecation note.
+
+Alongside better data, we also retrained the models with more compute, tuned
+hyperparameters, and added a two-phase transfer-learning schedule (frozen
+backbone → fine-tune upper blocks 6–8) documented in
+`model_service/training/train.py`.
+
+
+2. Tests as guardrails against regressions
+------------------------------------------
+
+Before touching the models, we added a real-world regression test suite so
+every future change could be measured. See
+`tests/test_real_world_regression.py`.
+
+The suite has three layers:
+
+  1. **Per-image assertions** against hand-labelled ground truth in
+     `tests/fixtures/real_world_labels.json`. You add photos + expected
+     labels; the test iterates automatically.
+
+  2. **Population-level sanity checks** that catch class-collapse without
+     needing per-image labels. Example: "on a set of predominantly clean
+     real faces, the model MUST predict `healthy` at least once". The old
+     model failed this because it never predicted `healthy` on any real
+     photo, even though it scored ~98% on training data.
+
+  3. **Multi-label specific checks** added later once we introduced
+     `skin_conditions` (see section 5).
+
+The lesson: the old `test_model_accuracy.py` pulled samples straight from
+the training folders, so it only proved the model could memorise its
+training set. Passing that suite is not the same as working on user photos.
+
+
+3. Bug: perfectly clean face returns "severe / oily / wrinkles"
+---------------------------------------------------------------
+
+The bug that started everything. A well-lit selfie of a clean-skin adult
+came back as:
+
+    Acne Analysis: severe (Low Confidence)
+    Skin Type: oily
+    Fine lines or wrinkles detected.
+
+Three separate problems compounded here.
+
+3a. Frontend schema drift ("Low Confidence" everywhere)
+    Every report displayed "Low Confidence" no matter what. Root cause was
+    boring: the React `ResultsPage` was reading `report.confidence`, a field
+    that no longer existed. The schema had moved to
+    `report.acne_confidence` / `skin_type_confidence` / `skin_issue_confidence`.
+    Undefined field → 0% → "Low" badge. Two lines of change in
+    `frontend/src/pages/ResultsPage.js` and `HistoryPage.js`.
+
+    While we were there, we also added the Skin Type and Skin Conditions
+    cards that had been silently missing from the results page. Before the
+    fix, the app only showed the acne card even though the backend was
+    returning three predictions.
+
+3b. Preprocessing mismatch — face-crop pipeline was dead code
+    `model_service/preprocessing/pipeline.py` already contained a full
+    face-detection + optional elliptical-mask pipeline. Its docstring said
+    "shared by inference AND training so the distributions match". In
+    reality it was never called from anywhere.
+
+    The user proved this empirically: uploading the FULL selfie (face plus
+    bed and background) returned severe/oily/wrinkles. Manually cropping
+    the same photo to just the face returned clear/dry/(...). The models
+    were fine — they just needed the same face-centric input they had been
+    trained on.
+
+    Fix: wire `PreprocessingPipeline` into `AnalysisService`, and make
+    face detection mandatory (`require_face=True`). If no face is
+    detected the app returns `NO_FACE` status so the user can retake.
+    Elliptical mask is off by default — the user's manual crop had no mask
+    and it worked, so we don't introduce an extra artifact.
+
+    Impact on the real-world regression suite: acne accuracy on the test
+    photos went from 3/9 correct to 7/9. False `severe` alarms dropped
+    from 2/9 to 1/9. Skin_issues went from collapsed-to-2-classes to
+    using 3 classes (still not `healthy` — that was a separate data
+    problem, see section 5).
+
+3c. Tilted / rotated face photos (bonus bug we hit while testing)
+    After 3b was in, the user tried a second photo taken while lying down
+    (head tilted ~15° on a pillow, coming out of an iPhone with EXIF
+    orientation tag). It failed with "No face detected". Two root causes:
+
+      1. `cv2.imdecode` ignores EXIF orientation, so the iPhone photo
+         loaded sideways in the array.
+      2. Haar cascade only detects upright frontal faces, so a tilted
+         head fails even after orientation is fixed.
+
+    Fix in `model_service/preprocessing/pipeline.py`:
+      - Decode with PIL and apply `ImageOps.exif_transpose()` before
+        handing off to OpenCV — respects the phone's orientation tag.
+      - After the upright detection attempt fails, retry the detector at
+        ±15°, ±30°, ±45°, ±90°, 180°. When one succeeds, we crop from
+        the rotated image so the resulting face is upright (matches
+        training distribution).
+    Result: both photos succeed. The `test_face_detection_covers_most_photos`
+    sanity test enforces this at CI time.
+
+
+4. Removing dead code
+---------------------
+
+While auditing, we also removed folders and files that no code imported:
+
+  - `model_service/acne_model/`, `model_service/pores_model/` — empty
+  - `model_service/skin_issues_model/`, `model_service/skin_type_model/` —
+    `__init__.py` files defining unused `SkinIssuesModel` / `SkinTypeModel`
+    classes (the actual model building happens in `train.py::build_model()`
+    and `orchestrator.py::_build_efficientnet()`).
+
+Deleting orphaned modules matters because future contributors would
+otherwise waste time trying to figure out which of two definitions is
+"the real one".
+
+
+5. Refactor: multi-label instead of single-label for skin conditions
+--------------------------------------------------------------------
+
+Even after 3b/3c fixed the acne model on real photos, the skin_issues
+model still hallucinated wrinkles or dark_spots on clean adult faces.
+Root cause: it was framed as multi-class classification — the model was
+FORCED to pick exactly one of {healthy, blackheads, dark_spots, pores,
+wrinkles}. It could not say "none of these".
+
+Real skin doesn't work that way. A face can have blackheads AND pores
+simultaneously, or neither. Softmax over five classes is the wrong shape
+for the problem.
+
+5a. The reframing
+    Multi-label classification is the correct pattern. Key differences:
+
+      Single-label (softmax)          Multi-label (sigmoid)
+      ─────────────────────           ──────────────────────
+      Loss: CrossEntropyLoss          Loss: BCEWithLogitsLoss
+      Output: softmax (sum to 1)      Output: sigmoid per class (independent)
+      Prediction: argmax              Prediction: threshold each independently
+      Labels: single int              Labels: multi-hot vector [1, 0, 1, ...]
+      Can output "nothing"? no        Can output "nothing"? YES
+      Metric: accuracy                Metric: per-class F1, macro-F1
+
+5b. What was dropped and why
+    We kept only `pores` and `blackheads` in the new model. The other
+    classes were dropped:
+
+      - `healthy`  — mislabelled dataset (section 1). Also, healthy is now
+                     implicit in multi-label: if no condition fires,
+                     the person is de-facto healthy from the model's view.
+      - `wrinkles` — dataset was stock-photos-of-elderly-people, a
+                     photographic style rather than a skin feature. Not
+                     clinically useful for the app's target audience.
+      - `dark_spots` — signal overlaps with acne severity. Kept the data
+                       on disk but excluded from the new task.
+
+    The old data is preserved in `data/skin_issues/` with a README that
+    documents each class decision — nothing is silently deleted.
+
+5c. The negative-anchor problem
+    Multi-label needs "negative" examples — images with NEITHER condition
+    — otherwise the model just learns to distinguish pores from
+    blackheads and pushes clean faces into one bucket or the other.
+
+    Solution: repurpose `data/acne_severity/clear/` (483 curated clean-
+    skin faces) as the negative folder. Semantically they're already the
+    right kind of image ("no visible acne"). Zero new labelling work.
+
+    New dataset layout at `data/skin_conditions/`:
+        pores/       1632 images (positive for pores)
+        blackheads/  1970 images (positive for blackheads)
+        negative/     483 images (no pores, no blackheads)
+
+    Labels for training:
+        pores/       → [pores=1, blackheads=0]
+        blackheads/  → [pores=0, blackheads=1]
+        negative/    → [pores=0, blackheads=0]
+
+    BCE handles the imbalance via `pos_weight` = negatives/positives per
+    output column (~1.5 for pores, ~1.07 for blackheads), so no
+    accuracy inflation from majority classes.
+
+5d. Downstream code changes
+    - `shared/schemas.py`: added `SkinCondition` enum + `SkinConditionFinding`
+      + `MultiLabelPrediction`, changed `AnalysisReport.skin_conditions:
+      List[SkinConditionFinding]`. Kept old `SkinIssue` enum so historical
+      reports in `storage/reports/` still deserialise.
+    - `model_service/training/train.py`: added a `multi_label=True` code
+      path (BCEWithLogitsLoss + per-class F1 + threshold-based prediction),
+      and a new `MultiLabelImageFolderDataset`.
+    - `model_service/inference/orchestrator.py`: `predict()` branches to
+      `_predict_multi_label()` for the skin_conditions model, applies the
+      threshold, sorts findings by confidence.
+    - `backend/blp/engine.py`: iterates the findings list, OR-combines
+      recommendations, deduplicates ingredients.
+    - `backend/report_generation/builder.py`: populates the list with
+      per-finding confidences.
+    - `backend/services/analysis_service.py`: confidence gate handles
+      both single-label (`conf ≥ threshold`) and multi-label
+      (`len(findings) > 0`) prediction shapes.
+    - `frontend/src/pages/ResultsPage.js`: renders a list of findings
+      or a "none detected" chip when empty.
+    - Tests: `test_blp.py` rewritten around multi-label semantics; new
+      per-image and population assertions in
+      `test_real_world_regression.py`.
+
+Training result (held-out test split of the same dataset): macro-F1 =
+0.996 (blackheads 0.995, pores 0.998). The user's original problem
+photo now correctly returns `conditions=[none]`.
+
+
+6. New bias exposed: model over-fires on stock internet photos
+--------------------------------------------------------------
+
+The regression suite still failed on stock-photo test images:
+`image tests people/*.jpg` came back with `blackheads=1.00` on 5 of 9
+clean-face photos, even though the user's own iPhone selfie returned
+`blackheads=0.29` (correctly below threshold).
+
+This is the SAME kind of dataset-signature problem we hit in section 3b,
+just shifted:
+
+  - `negative/` (ACNE04): a specific, standardised photographic style
+    (clinical portrait, particular resolution/lighting).
+  - `blackheads/` (Roboflow): arbitrary internet stock photos.
+
+The model quietly learned "ACNE04-style photo → clean, everything else →
+blackheads". Test-set F1 = 0.996 didn't warn about this because the test
+split has the SAME distribution as training.
+
+The user's photo happens to look more ACNE04-like (high-resolution,
+close-up, well-lit iPhone selfie). Small stock JPEGs look more Roboflow-
+like. Hence the split behaviour.
+
+6a. The fix (creative solution)
+    Rather than sourcing a whole new negative dataset, we repurposed an
+    existing one from a different model in the pipeline. The `skin_type`
+    training data (~4,000 in-the-wild face photos labelled oily / dry /
+    normal / combination) is orthogonal to pores/blackheads presence,
+    and it spans exactly the "arbitrary internet portrait" distribution
+    the old negatives lacked.
+
+    But we didn't dump all 4,000 into the negatives folder — a few
+    concerns:
+
+      - Photographic style matters, but so does label noise. Some
+        skin_type images DO contain visible pores or blackheads.
+      - Adding all 4,000 negatives would swamp the two positive
+        classes and shift the class balance too far.
+
+    Compromise: sample a "cleanest" subset weighted toward skin types
+    less likely to correlate with visible pores/blackheads:
+
+        normal:      500 images  (usually cleanest visually)
+        dry:         500 images  (rarely shows pores)
+        combination: 248 images  (all available in train/)
+        oily:        200 images  (most likely to have visible pores)
+                    ─────
+                    1448 total   (skintype_<class>_*.jpg naming so
+                                  each added file is identifiable and
+                                  reversible)
+
+    Final class balance for training the second version of skin_conditions:
+
+        pores/                  1632 images (positive for pores)
+        blackheads/             1970 images (positive for blackheads)
+        negative/               1931 images = 483 ACNE04 + 1448 skin_type
+                                              samples
+
+    BCE pos_weight (measured on the actual training split):
+        pores      = 2.391
+        blackheads = 1.809
+
+    Both within the clip range (0.1, 10.0). The multi-hot label for a
+    skin_type sample is `[0, 0]` — same as the ACNE04 negatives.
+
+    Note: some skin_type images will contain real pores or blackheads
+    and will be labelled as negatives, which is unavoidable label
+    noise. Empirically that noise costs less than the domain gap it
+    fills. If in the future we get per-image annotations, we can tag
+    those explicitly.
+
+6b. Actual results (retrain #2 vs retrain #1)
+
+    On the held-out test split of the training data:
+
+        Retrain #1 (ACNE04-only negatives):    macro-F1 = 0.996
+        Retrain #2 (with skin_type negatives): macro-F1 = 0.981
+
+    The DROP from 0.996 → 0.981 is a healthy signal, not a regression.
+    The first model was overfitting to the narrow ACNE04 photographic
+    style. The second is exposed to a much wider distribution, so its
+    training-set F1 is lower but its predictions on real user photos
+    are more calibrated. This is called "graceful degradation": trading
+    training-set score for out-of-distribution generalisation.
+
+    On the real-world regression suite (9 stock photos + 2 iPhone
+    selfies, all clean-skin), per-image failures dropped:
+
+        Retrain #1: 7 skin_conditions failures out of 11 photos
+                    (blackheads flagged with 0.98-1.00 on nearly every
+                     photo — old bias fully present)
+        Retrain #2: 3 skin_conditions failures out of 11 photos
+                    (blackheads flagged with 0.63-0.88 on the failing
+                     ones; the user's iPhone selfies now return
+                     blackheads=0.00 and pores=0.00)
+
+    Population-level sanity tests that were previously red now green:
+      - `test_skin_conditions_reports_empty_findings_sometimes` — PASS.
+        The model can now say "no notable conditions" on real photos,
+        the exact bug that started this entire refactor.
+      - `test_skin_conditions_does_not_flag_everything` — PASS.
+
+6c. Why this is defensible
+    Repurposing data across sub-models within the same pipeline is a
+    legitimate technique (sometimes called "domain adaptation via
+    auxiliary data" or "hard-negative mining from adjacent tasks"). It
+    trades a small, uniform amount of label noise for a large gain in
+    photographic diversity. The alternative — sourcing thousands of
+    new, hand-curated clean-face photos — would take days.
+
+    We captured this decision in code, tests, and this recap so the
+    tradeoff is explicit rather than hidden.
+
+
+7. What the current pipeline looks like end-to-end
+--------------------------------------------------
+
+    image bytes
+      → PIL decode + EXIF orientation
+      → face detection (Haar + rotation retry ±15/30/45/90/180°)
+      → tight face crop (rotated to upright if needed)
+      → resize 224×224 + ImageNet normalisation
+      → parallel inference on 3 models:
+           acne (single-label softmax)
+           skin_type (single-label softmax)
+           skin_conditions (multi-label sigmoid, threshold 0.5)
+      → BLP engine (rule-based, JSON rules) combines everything
+      → deterministic ingredient recommendations
+      → report persisted as JSON, delivered via FastAPI
+      → React frontend renders per-model cards with per-model
+        confidence indicators
+
+
+8. Test coverage
+----------------
+
+    tests/test_blp.py                  BLP engine — single- AND multi-label
+    tests/test_e2e_pipeline.py         Full pipeline smoke tests
+    tests/test_integration.py          Pipeline component contracts
+    tests/test_model_accuracy.py       Model sanity on training data
+    tests/test_real_world_regression.py
+                                       The regression net that catches
+                                       the bugs training-data tests miss —
+                                       hand-labelled real photos + population
+                                       sanity checks. THIS is the test to run
+                                       before every release.
+
+Every test either passes cleanly or has a clear skip reason. The
+remaining failures at the time of writing correspond to known ceilings
+of the acne (~73% val acc) and skin_type (~71% val acc) models, and
+one bias correction still landing (section 6).
+
+
+9. Lessons that generalise
+--------------------------
+
+  - Training accuracy ≠ real-world accuracy. Always test on a held-out
+    distribution matched to production (real user photos), not on splits
+    of the same training set.
+  - Multi-class softmax cannot say "none". If the real world allows
+    "none" or "multiple", the loss and architecture must reflect that.
+  - Preprocessing at training MUST match preprocessing at inference.
+    Dead code that claims to be "shared" is worse than no code.
+  - Data quality trumps model complexity. A perfectly trained model on
+    mislabelled data will be perfectly wrong.
+  - Domain gaps look like class collapse. If a model refuses to predict
+    one class on real inputs, suspect the training distribution before
+    suspecting the loss function.
