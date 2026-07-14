@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from shared.config import settings
 from shared.schemas import HealthResponse
 from backend.api.routes import router as analysis_router
+from backend.api.auth import router as auth_router
 from model_service.inference.orchestrator import get_orchestrator
 
 logger = logging.getLogger("cara")
@@ -53,6 +54,7 @@ app.add_middleware(
 
 # Routes
 app.include_router(analysis_router)
+app.include_router(auth_router)
 
 
 @app.get("/health", response_model=HealthResponse)

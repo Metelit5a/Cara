@@ -157,3 +157,22 @@ class HealthResponse(BaseModel):
     status: str = "healthy"
     models_loaded: List[str] = []
     version: str = "0.1.0"
+
+
+class UserCreate(BaseModel):
+    """Schema for registering a new user."""
+    username: str
+    email: str
+    password: str
+
+
+class UserLogin(BaseModel):
+    """Schema for logging in an existing user."""
+    email: str
+    password: str
+
+
+class Token(BaseModel):
+    """JWT response payload for authentication."""
+    access_token: str
+    token_type: str = "bearer"
