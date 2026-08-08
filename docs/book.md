@@ -30,7 +30,7 @@ so to make sure that the book is according to this standard, i will add some fil
 
 i would say there were 3 phases to our project, and you will see some conflicting stuff you will know why , 
 
-phase one is for the POC resaearch. then we thought we will work with certein datasets, and it turned out in later phases it will not work like that.
+phase one is for the POC resaearch. then we thought we will work with certain datasets, and it turned out in later phases it will not work like that.
 we rearched a lot in this stage, made sure our product will actually be useful, saw our competitors, and validated the possibility of building a working system.
 
 phase 2 is after we actually tried all 4 of the architectures, but we did it only on acne04 so WE STILL didnt know that the datasets we went with didnt actually satisfy our standards .
@@ -40,6 +40,9 @@ phase 3 is a the biggest phase because thats when we realised the results in rea
 (read model-rework-guide.txt and models-rework-recap.txt)
 
 so, obviosly, most of the "Your algorithms" part of the book (ofc in the book the name should be more sophiticated) will be about that data and architecture struggle when met with real world results. 
+you may also look at all the commits history and things like that to see the process of how we found and solved problems and how we dealt with them.
+
+when talking about the decisions we made and why - you really need to dive deep and explain and not just skim it and definitely not make stuff up this document needs to be very professional and well put together and must show our deep understanding but also beware of using too many buzzwords and stupid jargon to look smart - it has the oppoisete effect.
 
 ive added some useful docs in this folder and pictures of the project for the latex / pdf of the book. there should be numbers for the graphs needed for the book, like scores of different acrhitectures, later scores for different datasets etc. if anything is missing, tell me, the book should be really ready for the defense, with all the data to be truthful and for the book to actually showcase all our work on this project. 
 
