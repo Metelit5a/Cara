@@ -10,5 +10,29 @@
     "username": "noas2",
     "email": "noashaanan@icloud.com",
     "hashed_password": "$2b$12$Dq167zp18BJPJ2nHquuMmeYCzUaoe.qIr0Ow/k0rqUeSaYh32N.8G"
+  },
+  {
+    "id": "3",
+    "username": "flowtester",
+    "email": "flowtest_1345488386@example.com",
+    "hashed_password": "$2b$12$HExZTtQEk6fqB.ETgcxwtOhM3fHy4wsJFrvYk2CLTQAG46pwO4SX2"
+  },
+  {
+    "id": "4",
+    "username": "flowtester",
+    "email": "flowtest_1501454060@example.com",
+    "hashed_password": "$2b$12$pnLblNtYXAny.D/AU4JEdeKEkeCv6SRYUd/nZU.NIUvRnSvceQKoq"
+  },
+  {
+    "id": "5",
+    "username": "flow2",
+    "email": "flow2_503340105@example.com",
+    "hashed_password": "$2b$12$OyjN0Vc9y6df7p61IlNwFejqbCb9lCvNy06mjEs3y2wOMJo21uNeC"
+  },
+  {
+    "id": "6",
+    "username": "jerry",
+    "email": "mmm@gmail.com",
+    "hashed_password": "$2b$12$LzS5Y3y70hdYx0Rdy1B1ZOQ8SSfr9SRQ.pF1beC04Olk/W3/eh8vi"
   }
 ]

@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { registerUser, loginUser } from '../api';
 
 function Register({ authValue }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = location.state?.from?.pathname || '/';
   const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,31 +21,10 @@ function Register({ authValue }) {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Registration failed');
-      }
-
-      const loginResponse = await fetch('http://localhost:8000/api/v1/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email, password: formData.password }),
-      });
-
-      const loginData = await loginResponse.json();
-      if (!loginResponse.ok) {
-        throw new Error(loginData.detail || 'Login failed');
-      }
-
+      await registerUser(formData);
+      const loginData = await loginUser({ email: formData.email, password: formData.password });
       authValue.login(loginData.access_token, formData.username);
-      navigate('/');
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(err.message || 'Unexpected error');
     } finally {
@@ -103,7 +85,8 @@ function Register({ authValue }) {
       </form>
 
       <p className="auth-link-row">
-        Already have an account? <Link to="/login">Log in</Link>
+        Already have an account?{' '}
+        <Link to="/login" state={location.state}>Log in</Link>
       </p>
     </div>
   );

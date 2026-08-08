@@ -1,0 +1,384 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    urlcolor=blue!70!black,
+}
+
+\title{\textbf{Cara Project: Comprehensive Presentation Transcripts}\\ \Large Team 520}
+\author{Sarit Metelitsa \and Ronen Metelitsa \and Noa Shaanan \and Elyasaf Namir}
+\date{}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{POC Cara Meeting}
+
+\textbf{Cara Project Specification}\\
+Cara - group 520\\
+Group number 520
+
+\textbf{Members}\\
+Ronen Metelitsa, Sarit Metelitsa, Noa Shaanan, Elyasaf Namir
+
+\subsection{Content overview}
+1. POC Scope\\
+2. Pipeline\\
+3. Timeline\\
+4. Member Responsibility\\
+5. Risks\\
+6. Questions
+
+\subsection{POC Scope}
+\textbf{IN:}
+\begin{itemize}
+    \item \textbf{Models Research:} The team will research various relevant models.
+    \item \textbf{Model Choice and Implementation:} Based on the chosen testing mechanism, the team will choose the model that had the best result. And it will be implemented in the project.
+    \item \textbf{UI, Backend, and Pipeline Integration:} The team will develop a basic ui and backend capabilities and will make sure everything integrates as expected.
+\end{itemize}
+
+\textbf{OUT:}
+\begin{itemize}
+    \item Face Lock Mechanism
+    \item Progress Tracking
+    \item User database and Login
+\end{itemize}
+
+\subsection{Pipeline}
+01. User takes picture\\
+02. Picture is sent to backend\\
+03. Pre Processing. Normalized Input is sent to model\\
+04. Model Output Is Processed By BLP\\
+05. Full Results are Sent to Front\\
+06. Full Conclusion Report is Displayed. The User Can Access the Results Anytime in the Dedicated Page
+
+\subsection{Timeline}
+\begin{itemize}
+    \item \textbf{4 weeks - Model Fork:} Each team member explores different: architecture, loss functions, training approach.
+    \item \textbf{2 weeks - PreProcessing, BLP Research, REST API:} Data normalization. Research for the trustworthy, verified rules. Full backend Implementation.
+    \item \textbf{2 weeks - Client Implementation And Integration:} Camera Interface, and picture sending. Result display, HomePage. Full integration with model and backend.
+\end{itemize}
+
+\subsection{Member Responsibility}
+All are working on respective model approaches. The finalized approaches will be shared and discussed. The approach that yields the best result is chosen.
+\begin{itemize}
+    \item \textbf{Elyasaf:} Basic Backend Boilerplate, REST API, DB creation, BLP rules building in DB. Fixing bugs, support other team members and planning forward.
+    \item \textbf{Noa:} Rule Research, Report Page Implementation Based On Models Results.
+    \item \textbf{Ronen:} BLP Algorithm Implementation, Backend To Frontend Integration.
+    \item \textbf{Sarit:} PreProcessing and Backend + Model Integration, Camera Page implementation and Integration with preprocessing.
+\end{itemize}
+
+\subsection{Potential Risks}
+\begin{itemize}
+    \item \textbf{Model Complexity:} Trying to detect everything at once (Multitask Learning) might lead to under-fitting.
+    \item \textbf{Input Quality:} A single image might not be enough for a valid diagnosis.
+    \item \textbf{Data Inconsistency:} Merging diverse datasets (ACNE04, CelebA, etc.) creates noise due to different lighting and resolutions.
+\end{itemize}
+
+\subsection{Questions}
+\begin{itemize}
+    \item Which architectures do you recommend given our dataset size and target?
+    \item Can you pinpoint possible problems we may encounter in the future while implementing (based on your experience)?
+    \item Did you note anything we missed in terms of the POC that we should take into consideration?
+\end{itemize}
+Thank you.
+
+\newpage
+\section{Cara - איפיון בסיסי (Basic Characterization)}
+
+\textbf{Cara Project Specification}\\
+Cara - group 520\\
+Group number 520
+
+\textbf{Members}\\
+Ronen Metelitsa, Sarit Metelitsa, Noa Shaanan, Elyasaf Namir
+
+\subsection{Content overview}
+1. The opportunity\\
+2. Related work\\
+3. Datasets\\
+4. Architecture\\
+5. Work plan\\
+6. Potential risks
+
+\subsection{The Opportunity}
+Cara is an intelligent, AI-powered skincare companion that bridges the gap between medical diagnostics and commercial marketing. We provide objective, ingredient-based analysis and long-term skin tracking, empowering users to understand their skin rather than just buy products.
+
+\begin{itemize}
+    \item \textbf{Ingredient Based:} While competitors push specific commercial brands to maximize revenue, Cara recommends active chemical ingredients, ensuring unbiased advice.
+    \item \textbf{Progress Tracking:} Existing apps offer one-time diagnostics. Cara visualizes skin trends over time, helping users identify seasonal patterns and routine effectiveness.
+    \item \textbf{Education:} Commercial tools focus on sales rather than giving their users an understanding of skincare. Cara offers explanations for each suggestion, severity metrics, and focuses on user education.
+\end{itemize}
+
+\subsection{Related Work}
+\textbf{Perfectcorp/HiMirror}
+\begin{itemize}
+    \item FEATURES: Apply computer vision for skin health evaluation. Offer convenient, instant assessments via mobile apps.
+    \item WEAKNESSES: Accuracy: Assessments vary significantly and are often just "convenient" estimates.
+\end{itemize}
+
+\textbf{La Roche-Posay/Cetaphil}
+\begin{itemize}
+    \item FEATURES: Use image analysis for specific concerns (acne, dryness, sensitivity). Backed by major skincare brand data.
+    \item WEAKNESSES: Marketing Driven: Primary goal is promoting the company's own products. Biased Results: Recommendations only lead to the brand's inventory.
+\end{itemize}
+
+\subsection{Datasets}
+By aggregating over 230,000 images across these datasets, we train our CNNs to identify features like oiliness, acne severity, and pores, translating clinical data into consumer-friendly insights.
+\begin{itemize}
+    \item \textbf{CelebA:} Approx. 200,000 facial pictures. Tags: yes. Classes: 40+, of facial features - wrinkles, large pores, oily skin etc. Use: Identification of different skin features in the same picture.
+    \item \textbf{Fitzpatrick 17k:} Approx. 17,000 facial pictures. Tags: yes. Classes: 100+, depicting the different skin conditions, or 6 to define skin type. Use: skin type classification, skin condition identification.
+    \item \textbf{ACNE04:} Over 1000 pictures. Tags: yes. Classes: pimples, black/white heads, etc. Use: acne identification and severity estimation.
+    \item \textbf{HAM10000/DermNet:} Approx. 20,000 pictures. Tags: yes. Classes: 20+, different skin condition diagnoses. Use: Enhancement of spot and redness detection.
+\end{itemize}
+
+\subsection{Architecture}
+\begin{itemize}
+    \item \textbf{Client-Side Application (Mobile/Web App):} Handles the UI, Image Uploader, and Local Data Manager.
+    \item \textbf{Server-Side Backend (Application Server):} Acts as the central hub managing API requests and the "Business Logic Processor," which translates raw AI scores into user-friendly ingredient recommendations.
+    \item \textbf{Deep Learning (ML) Service:} A Convolutional Neural Network responsible for analyzing the face image.
+    \item \textbf{Database (DB):} Stores user profiles, the "Analysis History Store" for tracking progress over time, and the "Ingredient Knowledge Base" for logic mapping.
+\end{itemize}
+
+\subsection{Work Plan}
+\begin{itemize}
+    \item \textbf{01 System Foundation:} Finalize Database schema (User/History/Ingredients). Implement Image Pre-processor and Face Detection. Set up Authentication.
+    \item \textbf{02 Core Analysis \& Model:} "Model Fork" competition between team members. Develop Logic to map AI scores to Ingredients. Launch Core UI for static analysis results. Explore Multitask Learning vs. multiple single-task models. Conduct Fine-tuning and compare EfficientNet with ViT. Define specific rules and algorithm for ingredient matching.
+    \item \textbf{03 Advanced Features:} Implement Skin Progress Tracking (Graphs). Build Routine Effectiveness Feedback loop. Optimize final Model performance.
+    \item \textbf{04 Deployment \& Testing:} Comprehensive system testing. Finalize API documentation. Full system deployment.
+\end{itemize}
+
+\subsection{Potential Risks}
+\begin{itemize}
+    \item \textbf{Ingredient Clashing:} Risk: Recommending ingredients that react negatively with each other. Mitigation: The "Ingredient Knowledge Base" specifically maps positive/negative relations to filter out clashing products via the Business Logic Processor.
+    \item \textbf{Accuracy:} Risk: Will we be able to achieve the level of precision we wanted to give our users? Mitigation: We will be testing all the relevant options and and different model architectures.
+    \item \textbf{Image Quality Variation:} Risk: Users will upload photos with bad lighting or angles, affecting accuracy. Mitigation: Use of strict quality validation of the picture - in terms of lighting, angles, resolution and an actual face.
+\end{itemize}
+Thank you.
+
+\newpage
+\section{Cara AI Skincare POC}
+
+\textbf{Cara}\\
+AI-Powered Assistant for Cosmetic Skin Analysis\\
+POC Presentation\\
+Sarit Metelitsa • Ronen Metelitsa • Noa Shaanan • Alyasaf Namir
+
+\subsection{Mission \& Vision}
+Explainable cosmetic skin analysis through modular architecture and advanced computer vision.
+\begin{itemize}
+    \item Production-Ready POC: Validating E2E AI pipeline.
+    \item Modular ML: Separated inference and logic layers.
+    \item Explainability: Actionable skincare insights, not medical advice.
+\end{itemize}
+
+\subsection{Sprint 1-2: Architecture Research}
+Each member explored a distinct architecture for 2 sprints to determine the optimal balance of inference speed, pre-training advantages, and classification accuracy on the ACNE04 dataset.
+\begin{itemize}
+    \item \textbf{Sarit:} CNN (ResNet) Our baseline model, testing traditional residual learning backbones. ($\sim$55\% Accuracy)
+    \item \textbf{Elyasaf:} DenseNet Analyzing dense feature reuse to improve gradient flow. ($\sim$62\% Accuracy)
+    \item \textbf{Ronen:} ViT (Transformer) Strong competitor using global context modeling for lesions. ($\sim$68\% Accuracy)
+    \item \textbf{Noa:} WINNER. EfficientNet Utilizing pre-trained weights \& compound scaling. (73.1\% Accuracy)
+\end{itemize}
+
+\subsection{Model Performance Benchmarking}
+Conclusion: While ViT proved to be a very strong architecture taking second place, EfficientNet ultimately won. Because EfficientNet is pre-trained on a massive amount of parameters, its initial weights were already incredibly sharp, allowing it to easily outperform the others with minimal training on our specific dataset size.
+
+\subsection{Why EfficientNet?}
+\begin{itemize}
+    \item \textbf{Pre-Trained Power:} Leveraged massive pre-trained parameters, providing highly optimized, sharp weights out-of-the-box.
+    \item \textbf{Fast Convergence:} Beat competing models with very little training, requiring only minor fine-tuning.
+    \item \textbf{Superior Scaling:} Compound scaling methodology perfectly suited our dataset constraints.
+\end{itemize}
+
+\subsection{Training Progression: Deep Dive}
+Two-Phase Training Strategy
+\begin{itemize}
+    \item \textbf{Phase 1:} Frozen Backbone 10 Epochs leveraging sharp pre-trained weights. Val Acc: 56.5\%.
+    \item \textbf{Phase 2:} Fine-Tuning 5 Epochs unfreezing upper layers. Significant jump to 73.1\% Val Acc.
+    \item \textbf{Final Evaluation:} Generalization on unseen test set: 69.5\% accuracy.
+\end{itemize}
+
+\subsection{Modular System Architecture}
+\begin{itemize}
+    \item \textbf{Frontend:} Client application. Captured images sent to Backend Gateway via REST API.
+    \item \textbf{Backend Gateway:} Orchestrates the flow. Coordinates between Model Service and Business Logic Layer.
+    \item \textbf{Model Service:} EfficientNet inference engine with specialized skincare preprocessing.
+    \item \textbf{BLP Engine:} Rule-based processing to translate severity scores into ingredient recommendations.
+    \item \textbf{Report Gen:} Dynamic generation of explainable reports with ingredients and reasoning.
+    \item \textbf{Data Pipeline:} Ensuring smooth handoffs between Deep Learning outputs and Full Stack rendering.
+\end{itemize}
+
+\subsection{The Pivot: Resilience \& Teamwork}
+"Adapting our workflow to push forward together."\\
+Due to the war and severe shifts in our availability, we realized the planned Git splits and isolated development wouldn't be realistic. Because the core of this project is Deep Learning—not complex full-stack separation—we pivoted to gathering online via Zoom to build the implementation together. We built the project, committed everything to Git as a unit, and successfully created the demo you see today.
+
+\subsection{End-To-End Implementation Flow}
+Capture $\rightarrow$ Preprocess $\rightarrow$ Inference $\rightarrow$ BLP Rules $\rightarrow$ Report
+\begin{itemize}
+    \item \textbf{Business Logic Processing (BLP):} Translates raw model output (e.g., Severity: Moderate) into actionable ingredient recommendations.
+    \item \textbf{Explainable Recommendations:} Every result includes an educational note explaining the 'Why' behind the suggested ingredient.
+\end{itemize}
+
+\subsection{Conclusion \& Success Metrics}
+\textbf{POC Achievements:}
+\begin{itemize}
+    \item Successfully built E2E working demo despite external challenges.
+    \item Validated EfficientNet as the current superior backbone due to sharp pre-trained weights.
+    \item Integrated rule-based BLP for explainability.
+\end{itemize}
+\textbf{Looking Forward:}\\
+The architecture is set up perfectly for future scaling. By abstracting the Deep Learning models from the frontend logic, future teams can easily swap in new models or add specific condition classifiers without breaking the application stack.
+
+Questions? Thank you for your attention.\\
+Cara: Explainable Skincare AI\\
+POC Presentation Demo
+
+\newpage
+\section{Cara Sprint Summary}
+
+\textbf{Cara}\\
+Sprint Summary: From Basic Models to a Smart, Personalized System
+
+\textbf{Sprint Objective}\\
+Transitioning to a fully functional, highly accurate, and personalized user platform.
+
+\textbf{Key Achievements}\\
+Resolved data bias, significantly improved preprocessing, and implemented secure user infrastructure.
+
+\subsection{User Infrastructure \& Progress Tracking}
+\begin{itemize}
+    \item \textbf{Authentication System:} Built a complete JWT-based infrastructure across the Backend and Frontend for secure user management.
+    \item \textbf{Data Isolation:} Every skin scan and diagnostic result is now securely linked exclusively to the specific user's account.
+    \item \textbf{Interactive Dashboard:} Visualizes skin condition progress over time. Features clickable tooltips revealing confidence levels, skin type, and specific detected issues.
+\end{itemize}
+
+\subsection{Data Challenges \& Model Training}
+\begin{itemize}
+    \item \textbf{Data Purge:} Discovered a dataset lacking "clear face" negative samples, causing the model to predict "severe acne" universally.
+    \item \textbf{Rotation Bugs:} solved rotation related cropping bugs to enable correct preprocessing in all cases.
+\end{itemize}
+
+\subsection{Preprocessing \& Facial Framing}
+\begin{itemize}
+    \item \textbf{Auto-crop Mechanism:} Implemented an automatic facial cropping step before passing images to the model.
+    \item \textbf{Real-Time User Guidance:} To ensure optimal image quality for accurate model predictions, we implemented an interactive guidance mechanism on top of the camera view. This system continuously tracks the user's position and provides immediate, on-screen feedback during capture, offering clear instructions such as "move closer," "center face," or "look straight."
+    \item \textbf{Live Camera Interface:} We developed and integrated a seamless live camera feed directly into the application's user interface. This dedicated camera screen provides a smooth, real-time viewing experience, allowing users to easily and intuitively capture their facial images for analysis without ever having to leave the app environment.
+\end{itemize}
+
+\subsection{Results Experience \& Diagnosis}
+\begin{itemize}
+    \item \textbf{Test Scenarios:} Real-world testing scenarios.
+    \item \textbf{Pivot To Multiclass:} Skin-Issues model was built to be used in a multiclass model architecture.
+    \item \textbf{Dataset Gap (another one):} the fix, creative repurpose.
+\end{itemize}
+
+\subsection{Conference Presentation Strategy}
+\begin{itemize}
+    \item \textbf{1. Live Interactive Scans:} We will have devices ready for real-time, live demonstrations. Examiners and curious attendees can test the Live Camera UI and instantly receive their personalized skin diagnosis.
+    \item \textbf{2. Failsafe Demo Loop:} A continuous loop of high-quality, pre-recorded screen captures demonstrating the perfect end-to-end user journey, ensuring a flawless visual regardless of hall lighting or Wi-Fi drops.
+    \item \textbf{3. The Pitch Structure:} A tailored 3-minute elevator pitch focusing on the core value proposition: our journey overcoming AI bias, the seamless user experience, and the precision of our tailored recommendations.
+\end{itemize}
+
+\newpage
+\section{Cara Post-POC Update}
+
+\textbf{Cara Project}\\
+Post-POC Progress Update: Model Optimization \& Face Validation\\
+PRESENTED BY TEAM 520: SARIT, RONEN, NOA, ELYASAF
+
+\subsection{Agenda}
+\begin{itemize}
+    \item \textbf{Data \& Debugging Challenges:} Resolving the critical "Low Confidence" bug in our models.
+    \item \textbf{ML Architecture Expansion:} Transitioning to new, parallel models for comprehensive diagnostics.
+    \item \textbf{BLP (Business Logic Processor) Upgrade:} Achieving seamless multi-model integration.
+    \item \textbf{Face Validation Architecture:} Introducing our hybrid approach to image verification.
+\end{itemize}
+
+\subsection{Overcoming ML Challenges: The Low Confidence Bug}
+During post-POC testing, we identified a critical issue where the model consistently returned results with sweeping "Low Confidence" scores.\\
+\textbf{Investigation \& Solution}
+\begin{itemize}
+    \item Initiated a deep-dive investigation into the datasets.
+    \item Successfully addressed the data noise and inconsistency issues that were anticipated during the POC phase.
+    \item Fixed the underlying data structural issues and retrained the models to guarantee high confidence levels across outputs.
+\end{itemize}
+
+\subsection{Diagnostic Model Expansion}
+Transitioning from a single POC model to a comprehensive, multi-layered architectural suite working in parallel.
+\begin{itemize}
+    \item \textbf{Acne Severity:} Building upon the original POC, this model evaluates the overall severity and spread of the acne condition accurately.
+    \item \textbf{Acne Types:} A new specialized model dedicated to identifying specific types of acne, such as whiteheads, blackheads, and cysts.
+    \item \textbf{Pores Detection:} An advanced model introduced to analyze pore size, congestion, and overall texture, ensuring a holistic skin analysis.
+\end{itemize}
+
+\subsection{BLP (Business Logic Processor) Upgrades}
+\textbf{Adapting the Business Logic}\\
+The significant expansion of our ML architecture necessitated a complete upgrade of the Business Logic Processor.
+\begin{itemize}
+    \item \textbf{Multi-Model Input:} Instead of relying on a single source, the BLP now simultaneously processes inputs from all three diagnostic models.
+    \item \textbf{Advanced Validation:} Implemented complex logic checks to handle concurrent skin conditions safely.
+\end{itemize}
+
+\subsection{The Architectural Dilemma}
+Where is the optimal location for the Face Lock mechanism to ensure only valid images are processed? Frontend or Backend?\\
+\textbf{Validation Status: The Hybrid Approach}\\
+We decided to combine both worlds to perfectly cover all user upload scenarios.
+\begin{itemize}
+    \item \textbf{1. Client-Side (Frontend):} Scenario: Real-Time Camera. The Plan: The Face Lock feature will provide instant, real-time feedback to the user before capture (e.g., "Poor lighting", "Face too far", "Look straight ahead").
+    \item \textbf{2. Server-Side (Backend):} Scenario: Gallery Upload. The Plan: Implement Face Detection directly on the server to verify a face actually exists in the uploaded image, saving computing power by preventing heavy model processing on invalid images.
+\end{itemize}
+
+\subsection{Next Steps \& Tasks}
+\begin{itemize}
+    \item \textbf{Database Integration:} Schema creation, Ingredient Knowledge Base migration, and Data Access (CRUD) setup.
+    \item \textbf{Security \& UX:} Develop Face Lock UI frame and basic client-side image quality validation.
+    \item \textbf{Face Validation:} Server-Side Face Detection implementation.
+    \item \textbf{Model Expansion:} Research additional models (redness, wrinkles), develop Post-processor, update BLP for combinations.
+    \item \textbf{New Features:} Results History screen, Progress Tracking (graphs), Feedback mechanism, and Login portal.
+\end{itemize}
+
+\newpage
+\section{CARA Project Iteration Review}
+
+\textbf{CARA Iteration Review}\\
+Transitioning from a stateless app to a fully deployed, authenticated, and user-specific skin tracking platform.
+
+\subsection{Deployment Decisions}
+\begin{itemize}
+    \item \textbf{Frontend: Vercel:} Leveraging Vercel for fast, zero-cost serverless deployment of our React application, ensuring optimal loading speeds globally.
+    \item \textbf{Backend: Cloud Run:} Wrapping our heavy FastAPI ML inference in Docker. Google Cloud Run handles compute-heavy tasks securely without strict API timeouts.
+    \item \textbf{Database: Firebase:} Transitioning from local JSON entities to a managed NoSQL database for secure, global data access and real-time syncing.
+\end{itemize}
+
+\subsection{Retraining \& Testing}
+Building on the clean, repurposed data incorporated last iteration, this sprint focused heavily on execution. We pushed our models through rigorous retraining cycles and tested them extensively against our real-world case sets.\\
+\textbf{Confirmed Results:}\\
+The evaluation phase proved highly successful. After thorough comparison with previous iterations, the new models consistently scored better on real cases, prompting our decision to permanently save these optimized weights.\\
+\textbf{Conflict Resolution:}\\
+With multiple heavy adjustments happening simultaneously, we encountered and successfully resolved significant merge conflicts, safely combining the improved models into the main branch without losing core functionality.
+
+\subsection{Next Steps to Launch: Retraining \& Integration}
+\begin{itemize}
+    \item \textbf{Containerization:} Package the FastAPI backend and updated ML models into a Docker image.
+    \item \textbf{Cloud Deployment:} Deploy Docker image to Cloud Run and push React frontend to Vercel.
+    \item \textbf{Firebase Migration:} Transition local user/report JSON structures to live Firestore collections.
+    \item \textbf{Final Validation:} Conduct end-to-end testing and finalize the public demo.
+\end{itemize}
+
+Questions? Thank you for your attention.\\
+Team CARA
+
+\end{document}

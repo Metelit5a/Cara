@@ -45,3 +45,34 @@ export async function healthCheck() {
   const response = await fetch('/health');
   return response.json();
 }
+
+// ── Auth ──
+// These go through the CRA dev proxy (package.json "proxy") so the browser
+// sees them as same-origin. That avoids CORS entirely and means we never
+// hard-code a host/port — the #1 cause of "Failed to fetch" during local dev.
+
+export async function registerUser({ username, email, password }) {
+  const response = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, email, password }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.detail || 'Registration failed. Please try again.');
+  }
+  return data;
+}
+
+export async function loginUser({ email, password }) {
+  const response = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.detail || 'Login failed. Please check your credentials.');
+  }
+  return data;
+}
