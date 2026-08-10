@@ -1,0 +1,32 @@
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Schematic of the EfficientNet-B0\xspace backbone used for each of \textsc {Cara}\xspace 's three classifiers. The classifier head (dropout + fully-connected + softmax or sigmoid) is the only part re-initialised for each task.\relax }}{9}{figure.caption.7}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {5.1}{\ignorespaces End-to-end runtime pipeline used by \textsc {Cara}\xspace at submission time. The three EfficientNet-B0\xspace models run sequentially on a shared preprocessed tensor; the BLP engine composes their outputs deterministically. Every arrow in the diagram was, at some point, a bug --- see \Cref {sec:preprocessing,sec:multi-label-refactor,sec:blp-engine}.\relax }}{19}{figure.caption.15}%
+\contentsline {figure}{\numberline {5.2}{\ignorespaces Actual per-epoch validation accuracy on the acne severity task, from \texttt {training\_log.txt}. The dashed line marks the best-saved checkpoint.\relax }}{21}{figure.caption.16}%
+\contentsline {figure}{\numberline {5.3}{\ignorespaces Per-epoch validation macro-\(F_1\) for both skin-conditions retrains, from \texttt {training\_log.txt}. Retrain \#1 peaks slightly higher on its own test split but generalises worse to real-world photographs; see \Cref {sec:domain-adaptation}.\relax }}{22}{figure.caption.17}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {7.1}{\ignorespaces Best validation metric per task. Bars for acne severity and skin type report accuracy; the skin-conditions bar reports macro-\(F_1 \times 100\). The metrics are not on the same footing --- see \Cref {sec:interpreting-numbers}.\relax }}{37}{figure.caption.25}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {8.1}{\ignorespaces The \textsc {Cara}\xspace landing page. The ``Educational Use Only'' banner at the bottom is a first-class part of the layout, not a footer.\relax }}{41}{figure.caption.29}%
+\contentsline {figure}{\numberline {8.2}{\ignorespaces The login page. Attempting to reach a protected page without a session redirects here.\relax }}{41}{figure.caption.30}%
+\contentsline {figure}{\numberline {8.3}{\ignorespaces The Analyze page. Tips for a good photograph are surfaced directly in the flow.\relax }}{42}{figure.caption.31}%
+\contentsline {figure}{\numberline {8.4}{\ignorespaces File-picker flow with a selected image ready to analyse.\relax }}{43}{figure.caption.32}%
+\contentsline {figure}{\numberline {8.5}{\ignorespaces Live camera capture with lighting / face / position / angle checks. The button unlocks only when all four are green.\relax }}{44}{figure.caption.33}%
+\contentsline {figure}{\numberline {8.6}{\ignorespaces Results page, top half. Each model has its own card with a per-model confidence bar. Skin Conditions is a multi-label card that lists findings (here: one finding, ``Blackheads'').\relax }}{45}{figure.caption.34}%
+\contentsline {figure}{\numberline {8.7}{\ignorespaces Results page, bottom half. The ingredient list is grouped by ingredient category. The Educational Note collects the plain-English notes from each rule that fired.\relax }}{46}{figure.caption.35}%
+\contentsline {figure}{\numberline {8.8}{\ignorespaces History page. The list of reports below the chart is clickable --- each row leads back to the full recommendation page for that historical report.\relax }}{47}{figure.caption.36}%
+\contentsline {figure}{\numberline {8.9}{\ignorespaces Chart point tooltip on the History page.\relax }}{47}{figure.caption.37}%
+\contentsline {figure}{\numberline {8.10}{\ignorespaces End-to-end runtime architecture of \textsc {Cara}\xspace .\relax }}{48}{figure.caption.38}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }

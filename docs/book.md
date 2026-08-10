@@ -47,3 +47,5 @@ when talking about the decisions we made and why - you really need to dive deep 
 ive added some useful docs in this folder and pictures of the project for the latex / pdf of the book. there should be numbers for the graphs needed for the book, like scores of different acrhitectures, later scores for different datasets etc. if anything is missing, tell me, the book should be really ready for the defense, with all the data to be truthful and for the book to actually showcase all our work on this project. 
 
 a note of UI - in the history part, you can click your past rresults to get again the full recommendation page with everything
+
+the book must not be too short and needs to be 35+ pages - but we do not want anything in the lines of repeating ideas and inflating stuff just to reach a page count every word written in this book counts and should be there for a reason.
