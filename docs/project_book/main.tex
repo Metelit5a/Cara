@@ -32,15 +32,14 @@
 \sisetup{detect-weight=true,detect-family=true}
 
 %------------------------------------------------------------------------------
-% Graphics & diagrams
+% Graphics
+% Note: all diagrams under figures/tikz/*.pdf are pre-rendered from the .tex
+% sources next to them, so main.tex does not load TikZ or pgfplots. This keeps
+% the Overleaf compile inside the free-plan timeout.
 %------------------------------------------------------------------------------
 \usepackage{graphicx}
 \graphicspath{{figures/}}
 \usepackage{xcolor}
-\usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc,shadows.blur,backgrounds,decorations.pathreplacing}
-\usepackage{pgfplots}
-\pgfplotsset{compat=1.18}
 
 %------------------------------------------------------------------------------
 % Tables
@@ -688,28 +687,7 @@ architecture decision downstream is coloured by it.
 
 \begin{figure}[htbp]
     \centering
-    \begin{tikzpicture}[
-        block/.style={rectangle, draw=caraprimary!70, fill=caraprimary!8,
-            minimum height=1.1cm, minimum width=1.6cm, rounded corners=2pt,
-            align=center, font=\small\bfseries},
-        arrow/.style={-{Latex[length=2.2mm]}, thick, draw=caraprimary!80}]
-    \node[block] (in)   {Input\\224\(\times\)224};
-    \node[block, right=6mm of in]    (stem) {Stem Conv};
-    \node[block, right=6mm of stem]  (mb1)  {MBConv\(\times k_1\)};
-    \node[block, right=6mm of mb1]   (mb2)  {MBConv\(\times k_2\)};
-    \node[block, right=6mm of mb2]   (mb3)  {MBConv\(\times k_3\)};
-    \node[block, below=6mm of mb2]   (gap)  {GAP};
-    \node[block, right=6mm of gap]   (fc)   {Dropout + FC};
-    \node[block, right=6mm of fc]    (out)  {Softmax or\\Sigmoid};
-
-    \draw[arrow] (in) -- (stem);
-    \draw[arrow] (stem) -- (mb1);
-    \draw[arrow] (mb1) -- (mb2);
-    \draw[arrow] (mb2) -- (mb3);
-    \draw[arrow] (mb3.south) |- (gap.east);
-    \draw[arrow] (gap) -- (fc);
-    \draw[arrow] (fc) -- (out);
-    \end{tikzpicture}
+    \includegraphics[width=0.95\linewidth]{tikz/effnet-block.pdf}
     \caption{Schematic of the \effnet backbone used for each of
     \cara's three classifiers. The classifier head (dropout +
     fully-connected + softmax or sigmoid) is the only part
@@ -1260,44 +1238,7 @@ box is where it is.
 
 \begin{figure}[htbp]
     \centering
-    \begin{tikzpicture}[
-        node distance=8mm,
-        every node/.style={font=\footnotesize},
-        stage/.style={rectangle, draw=caraprimary!70, fill=caraprimary!8,
-            minimum height=1.2cm, minimum width=3.4cm, rounded corners=2pt,
-            align=center},
-        data/.style={rectangle, draw=black!60, fill=black!5,
-            minimum height=0.9cm, minimum width=2.8cm, align=center},
-        model/.style={rectangle, draw=caraaccent, fill=caraaccent!10,
-            minimum height=0.9cm, minimum width=3.4cm, rounded corners=2pt,
-            align=center},
-        arrow/.style={-{Latex[length=2.5mm]}, thick, draw=black!70}]
-
-        \node[data]                       (raw)   {Raw image bytes};
-        \node[stage, below=of raw]        (decode){PIL decode + EXIF transpose};
-        \node[stage, below=of decode]     (detect){Haar face detect\\+ rotation retry};
-        \node[stage, below=of detect]     (crop)  {Tight face crop};
-        \node[stage, below=of crop]       (tens)  {Resize 224\(\times\)224\\+ ImageNet norm};
-
-        \node[model, right=22mm of tens]  (acne)  {Acne severity\\\effnet (softmax, 4 cls)};
-        \node[model, above=6mm of acne]   (skin)  {Skin type\\\effnet (softmax, 4 cls)};
-        \node[model, below=6mm of acne]   (cond)  {Skin conditions\\\effnet (sigmoid, 2 cls)};
-
-        \node[stage, right=22mm of acne]  (blp)   {BLP rule engine\\(\texttt{rules.json})};
-        \node[data,  below=of blp]        (rep)   {Structured report};
-
-        \draw[arrow] (raw)   -- (decode);
-        \draw[arrow] (decode) -- (detect);
-        \draw[arrow] (detect) -- (crop);
-        \draw[arrow] (crop)   -- (tens);
-        \draw[arrow] (tens.east) -- (skin.west);
-        \draw[arrow] (tens.east) -- (acne.west);
-        \draw[arrow] (tens.east) -- (cond.west);
-        \draw[arrow] (skin.east) -- (blp.west);
-        \draw[arrow] (acne.east) -- (blp.west);
-        \draw[arrow] (cond.east) -- (blp.west);
-        \draw[arrow] (blp)    -- (rep);
-    \end{tikzpicture}
+    \includegraphics[width=0.95\linewidth]{tikz/pipeline-final.pdf}
     \caption{End-to-end runtime pipeline used by \cara at
     submission time. The three \effnet models run sequentially on
     a shared preprocessed tensor; the BLP engine composes their
@@ -1383,32 +1324,7 @@ point and lifts the best validation accuracy to \(0.729\).
 
 \begin{figure}[htbp]
     \centering
-    \begin{tikzpicture}
-    \begin{axis}[
-        width=\linewidth, height=6.5cm,
-        xlabel={Epoch (concatenated)}, ylabel={Validation accuracy},
-        ymin=0.4, ymax=0.8,
-        xmin=0, xmax=28,
-        grid=both, grid style={gray!20},
-        legend pos=south east,
-        legend style={font=\footnotesize},
-        title={Two-phase training on the acne severity task}]
-    \addplot[thick, color=caraprimary, mark=*, mark size=1.4pt] coordinates {
-        (1,0.469) (2,0.551) (3,0.614) (4,0.628) (5,0.580)
-        (6,0.604) (7,0.614) (8,0.652) (9,0.585) (10,0.512)
-        (11,0.570) (12,0.628) (13,0.647)
-    };
-    \addlegendentry{Phase 1 (head only)}
-    \addplot[thick, color=caraaccent, mark=square*, mark size=1.4pt] coordinates {
-        (14,0.647) (15,0.686) (16,0.652) (17,0.696) (18,0.696)
-        (19,0.715) (20,0.676) (21,0.700) (22,0.715) (23,0.696)
-        (24,0.729) (25,0.729)
-    };
-    \addlegendentry{Phase 2 (fine-tune upper blocks)}
-    \addplot[dashed, color=black!60] coordinates {(0,0.729) (28,0.729)};
-    \addlegendentry{Best val acc: 0.729}
-    \end{axis}
-    \end{tikzpicture}
+    \includegraphics[width=\linewidth]{tikz/val-curves.pdf}
     \caption{Actual per-epoch validation accuracy on the acne
     severity task, from \texttt{training\_log.txt}. The dashed line
     marks the best-saved checkpoint.}
@@ -1424,29 +1340,7 @@ one we ship.
 
 \begin{figure}[htbp]
     \centering
-    \begin{tikzpicture}
-    \begin{axis}[
-        width=\linewidth, height=6.5cm,
-        xlabel={Epoch (concatenated)},
-        ylabel={Validation macro-\(F_1\)},
-        ymin=0.85, ymax=1.00,
-        xmin=0, xmax=15,
-        grid=both, grid style={gray!20},
-        legend pos=south east,
-        legend style={font=\footnotesize},
-        title={Skin-conditions retrains: macro-\(F_1\) per epoch}]
-    \addplot[thick, color=caraprimary, mark=*, mark size=1.4pt] coordinates {
-        (1,0.887)(2,0.902)(3,0.914)(4,0.918)(5,0.916)(6,0.916)(7,0.940)(8,0.925)
-        (9,0.967)(10,0.983)(11,0.984)(12,0.983)(13,0.986)(14,0.994)
-    };
-    \addlegendentry{Retrain \#1 (ACNE04-only negatives)}
-    \addplot[thick, color=caraaccent, mark=square*, mark size=1.4pt] coordinates {
-        (1,0.888)(2,0.916)(3,0.917)(4,0.928)(5,0.914)(6,0.923)(7,0.937)(8,0.935)
-        (9,0.978)(10,0.979)(11,0.980)(12,0.987)(13,0.978)(14,0.984)
-    };
-    \addlegendentry{Retrain \#2 (\(+\) skin-type negatives)}
-    \end{axis}
-    \end{tikzpicture}
+    \includegraphics[width=\linewidth]{tikz/cond-curves.pdf}
     \caption{Per-epoch validation macro-\(F_1\) for both
     skin-conditions retrains, from \texttt{training\_log.txt}.
     Retrain \#1 peaks slightly higher on its own test split but
@@ -2230,27 +2124,7 @@ for the single-label tasks, macro-\(F_1\) for the multi-label task.
 
 \begin{figure}[htbp]
     \centering
-    \begin{tikzpicture}
-    \begin{axis}[
-        ybar,
-        width=0.85\linewidth, height=6cm,
-        bar width=22pt,
-        ymin=0, ymax=105,
-        symbolic x coords={Acne severity, Skin type, Skin conditions},
-        xtick=data,
-        ylabel={Best validation metric (\%)},
-        nodes near coords,
-        nodes near coords style={font=\footnotesize},
-        enlarge x limits=0.25,
-        grid=both, grid style={gray!20},
-    ]
-    \addplot[fill=caraprimary!70, draw=caraprimary] coordinates {
-        (Acne severity, 72.9)
-        (Skin type,     70.9)
-        (Skin conditions,   98.1)
-    };
-    \end{axis}
-    \end{tikzpicture}
+    \includegraphics[width=0.85\linewidth]{tikz/final-bar.pdf}
     \caption{Best validation metric per task. Bars for acne severity
     and skin type report accuracy; the skin-conditions bar reports
     macro-\(F_1 \times 100\). The metrics are not on the same
@@ -2568,53 +2442,7 @@ containers sit behind an nginx reverse proxy.
 
 \begin{figure}[htbp]
     \centering
-    \begin{tikzpicture}[
-        node distance=6mm and 10mm,
-        every node/.style={font=\small},
-        service/.style={rectangle, draw=caraprimary, fill=caraprimary!8,
-            minimum height=1.0cm, minimum width=3.2cm, rounded corners=2pt,
-            align=center},
-        model/.style={rectangle, draw=caraaccent, fill=caraaccent!10,
-            minimum height=0.9cm, minimum width=3.2cm, rounded corners=2pt,
-            align=center},
-        io/.style={ellipse, draw=black!60, fill=black!5, align=center,
-            minimum height=0.9cm, minimum width=2.6cm},
-        arrow/.style={-{Latex[length=2.5mm]}, thick, draw=black!70}]
-
-        \node[io]                        (user)  {User browser};
-        \node[service, below=of user]    (front) {React SPA\\Home / Analyze / Results / History / Login};
-        \node[service, below=of front]   (api)   {FastAPI Routes\\+ Auth (JWT)};
-        \node[service, below=of api]     (svc)   {Analysis Service};
-        \node[service, below=of svc]     (pre)   {Preprocessing pipeline\\EXIF \(\to\) Haar+rotation \(\to\) crop \(\to\) resize};
-
-        \node[service, below=8mm of pre] (orch)  {Inference Orchestrator};
-        \node[model, below left=6mm and -10mm of orch] (m1) {Acne severity\\\effnet (softmax)};
-        \node[model, below=6mm of orch]                (m2) {Skin type\\\effnet (softmax)};
-        \node[model, below right=6mm and -10mm of orch](m3) {Skin conditions\\\effnet (sigmoid, multi-label)};
-
-        \node[service, below=22mm of m2] (blp)  {BLP Rule Engine\\(\texttt{rules.json})};
-        \node[service, below=of blp]     (rep)  {Report Builder\\+ Storage};
-
-        \draw[arrow] (user)  -- (front);
-        \draw[arrow] (front) -- (api);
-        \draw[arrow] (api)   -- (svc);
-        \draw[arrow] (svc)   -- (pre);
-        \draw[arrow] (pre)   -- (orch);
-        \draw[arrow] (orch)  -- (m1);
-        \draw[arrow] (orch)  -- (m2);
-        \draw[arrow] (orch)  -- (m3);
-        \draw[arrow] (m1) |- (blp);
-        \draw[arrow] (m2) -- (blp);
-        \draw[arrow] (m3) |- (blp);
-        \draw[arrow] (blp)   -- (rep);
-        \draw[arrow, dashed] (rep.east) .. controls +(right:2.5cm) and +(right:2.5cm) .. (front.east);
-
-        \begin{scope}[on background layer]
-            \node[draw=black!40, dashed, rounded corners=3pt,
-                  fit=(api)(svc)(pre)(orch)(m1)(m2)(m3)(blp)(rep),
-                  inner sep=6pt, label={[font=\footnotesize\itshape]above:Backend (FastAPI + PyTorch)}] {};
-        \end{scope}
-    \end{tikzpicture}
+    \includegraphics[width=0.95\linewidth]{tikz/architecture.pdf}
     \caption{End-to-end runtime architecture of \cara.}
     \label{fig:architecture}
 \end{figure}
