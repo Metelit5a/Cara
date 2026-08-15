@@ -192,23 +192,37 @@ deterministic, rule-based Business Logic Processing (BLP) engine that
 turns raw model outputs into actionable, explainable advice.
 
 This report tells the honest story of how the system reached that
-design. The project went through three distinct phases. In Phase 1 we
-scoped the problem, surveyed competitors, and produced a proof of
-concept. In Phase 2 we compared four candidate architectures on our
-anchor datasets and chose three independent \effnet classifiers coupled
-to a rule-based fusion layer. In Phase 3 --- the largest phase ---
-real-world test images exposed catastrophic failures that a naive
-validation split had hidden: models were learning dataset signatures
-and photographic style rather than clinical features; a preprocessing
-pipeline that existed in code was silently disconnected in production;
-one of the ``healthy'' training folders turned out to be
-\emph{acne-level-zero} photographs with visible blemishes; and a
-softmax over five skin issues was mathematically incapable of saying
-``none''. We responded by rebuilding the dataset from the ground up,
-reframing skin issues as a multi-label problem with proper negative
-anchors, enforcing training--inference preprocessing parity, and
-adapting the model to in-the-wild photographs by borrowing negatives
-from an orthogonal dataset.
+design. The project went through three distinct phases. \textbf{Phase 1
+was pure research}: no code, no models. We scoped the problem, surveyed
+competitors, mapped out what a truthful skin-analysis product would
+look like, and agreed early on that recommendations would be delivered
+through a deterministic rule engine rather than a learned recommender.
+We also identified a set of candidate public datasets we believed
+would be good enough to build the system on. \textbf{Phase 2 was the
+proof of concept}: each of the four team members implemented a
+different backbone architecture --- ResNet, DenseNet, Vision
+Transformer, and \effnet --- trained on the ACNE04 acne-severity
+dataset, in order to compare them head-to-head on a common benchmark
+before committing to one. \effnet won at \(73.1\,\%\) validation
+accuracy (against \(\sim 55\,\%\) for ResNet, \(\sim 62\,\%\) for
+DenseNet, and \(\sim 68\,\%\) for ViT) and became the backbone of the
+POC and, later, of every model we shipped. \textbf{Phase 3 was the
+largest phase and the source of everything in this repository}: we
+turned the single-model POC into the final multi-model application,
+adding a skin-type model and a skin-conditions model, and running each
+model against real user photographs for the first time. That is where
+almost every hard lesson surfaced. Real-world test images exposed
+catastrophic failures that a naive validation split had hidden: models
+were learning dataset signatures and photographic style rather than
+clinical features; a preprocessing pipeline that existed in code was
+silently disconnected in production; one of the ``healthy'' training
+folders turned out to be \emph{acne-level-zero} photographs with
+visible blemishes; and a softmax over five skin issues was
+mathematically incapable of saying ``none''. We responded by rebuilding
+the datasets from the ground up, reframing skin issues as a multi-label
+problem with proper negative anchors, enforcing training--inference
+preprocessing parity, and adapting the model to in-the-wild
+photographs by borrowing negatives from an orthogonal dataset.
 
 The final acne and skin-type classifiers reach 72.9\,\% and 70.9\,\%
 best validation accuracy on their respective test splits; the
@@ -315,8 +329,9 @@ it a natural target for supervised deep learning:
 
 \section{Non-negotiable design principles}\label{sec:principles}
 
-Very early in the project we agreed on three rules that would govern
-every technical decision. We refer back to them throughout the report.
+Very early in the project --- during Phase 1, before any code was
+written --- we agreed on three rules that would govern every technical
+decision. We refer back to them throughout the report.
 
 \begin{description}
     \item[Truthfulness is the product.] A wrong prediction is worse
@@ -328,7 +343,10 @@ every technical decision. We refer back to them throughout the report.
     \item[Explainability comes from design, not post-hoc excuses.] The
         rule engine that converts model predictions into recommendations
         is deterministic and human-readable. A user (or a supervisor)
-        can trace exactly why a specific recommendation was made.
+        can trace exactly why a specific recommendation was made. This
+        commitment to a rule-based recommendation layer was made in
+        Phase 1 and was never revisited: a learned recommender was
+        never even a candidate.
 \end{description}
 
 These principles ruled out several attractive architectures:
@@ -344,9 +362,16 @@ about answering. The rest of the book returns to each of them with
 evidence:
 
 \begin{itemize}
-    \item Does splitting a multi-task problem into independent
-        single-task classifiers beat a shared-backbone multi-task
-        network on a small-data, class-imbalanced regime?
+    \item On our data budget (thousands, not millions, of images),
+        which family of backbones actually generalises best ---
+        classical CNNs (ResNet), densely-connected CNNs (DenseNet),
+        transformer-based models (ViT), or compound-scaled CNNs
+        (\effnet)? Does the answer come from the architecture itself
+        or from the strength of its pretrained weights?
+    \item Is it better to build one large multi-task model that
+        predicts every skin aspect from a shared backbone, or to run
+        several small, task-specific models in parallel? Which is
+        easier to debug when something goes wrong?
     \item When the physical problem admits ``multiple'' or ``none''
         as legitimate answers, how much does moving from softmax to
         sigmoid + BCE actually change the model's behaviour on real
@@ -359,10 +384,6 @@ evidence:
         images as negatives for another task --- close a
         distribution gap that would otherwise require a fresh
         labelling effort?
-    \item At the scale of a small student team without a
-        dermatologist on staff, can a hand-written rule engine
-        outperform a learned recommender for the final
-        recommendation step?
 \end{itemize}
 
 Each question was answered by an experiment or by a diagnosed
@@ -374,12 +395,17 @@ The concrete contributions of this project are:
 
 \begin{itemize}
     \item A production-grade, end-to-end web application that runs
-        three deep-learning models in parallel and returns a report
-        within a couple of seconds on CPU-only hardware.
-    \item A comparative study of four candidate architectures with an
-        honest discussion of why three of them failed, resulting in a
-        design that trades a small amount of raw accuracy for a large
-        amount of trust and explainability.
+        three deep-learning models sequentially on a single shared
+        input and returns a report within a couple of seconds on
+        commodity hardware.
+    \item A head-to-head comparison of four genuinely different
+        backbone families (ResNet, DenseNet, Vision Transformer, and
+        \effnet) on the same acne-severity benchmark, with an honest
+        explanation of why \effnet won on our data budget.
+    \item A multi-model architecture in which each skin sub-task is
+        handled by its own dedicated \effnet classifier, feeding a
+        deterministic rule-based recommendation engine that we
+        committed to from the very first day of the project.
     \item A multi-label refactor of the skin-conditions problem, with
         cross-task negative-anchor mining, that raised out-of-domain
         precision without a fresh labelling effort.
@@ -400,9 +426,9 @@ or enter at whichever chapter interests them.
 the technical chapters.
 \Cref{ch:data} describes the datasets, how we cleaned them, and how
 they evolved across the three phases.
-\Cref{ch:algorithm} is the main technical chapter, walking through the
-architecture, the four Phase-2 candidates, and the Phase-3 rework in
-detail.
+\Cref{ch:algorithm} is the main technical chapter, walking through
+the architecture, the Phase-2 bake-off of four different backbone
+families, and the Phase-3 rework in detail.
 \Cref{ch:experiments,ch:results} report experiments and final results.
 \Cref{ch:product} describes the product from a user's point of view,
 with screenshots.
@@ -469,46 +495,48 @@ releases. The most influential public resources we considered:
 
 \section{Related academic work}
 
-Deep learning for skin analysis divides roughly into three lines of
-work.
+Four bodies of prior work directly shaped \cara. We name each one
+briefly, then say what we actually took from it.
 
 \subsection{Lesion classification on dermoscopic images}
-The best-known result is Esteva et al.~\cite{esteva2017dermatologist},
-who trained a single Inception-v3 network on a large private dataset
-of clinical images and reached dermatologist-level performance on
-binary melanoma classification. Subsequent work explored specialised
-architectures such as EfficientNet~\cite{tan2019efficientnet},
-ResNeXt~\cite{xie2017aggregated}, and Vision Transformers, plus data
-strategies such as heavy augmentation, colour-constancy normalisation,
-and ensemble averaging.
+Esteva et al.~\cite{esteva2017dermatologist} showed that a single
+CNN, trained on enough clinical images, could match dermatologists
+on binary melanoma classification. That paper is the reason we felt
+confident that off-the-shelf CNN backbones would carry visual
+dermatology signals well enough for a cosmetic (non-diagnostic)
+application. It is also where our defensive stance on labelling
+comes from: their pipeline succeeds because the labels are
+clean, and the same lesson applies in reverse whenever we discover
+that our labels are not.
 
 \subsection{Acne severity grading}
-The ACNE04 paper~\cite{wu2019acne04} formulates acne severity as a
-label-distribution learning problem, arguing that hard categorical
-labels lose information (a photograph labelled \emph{moderate} is
-often only marginally different from one labelled \emph{mild}).
-Follow-up work has used ordinal regression, multi-task lesion
-counting, and attention-based localisation. For our project we
-deliberately chose the simpler categorical formulation, because the
-downstream consumer of the prediction --- the rule engine --- expects
-discrete severity buckets.
+The ACNE04 paper~\cite{wu2019acne04} is both our anchor dataset and
+a design reference. Its authors frame acne grading as label-distribution
+learning, arguing that categorical labels lose information because
+adjacent severity buckets differ only marginally. We deliberately
+chose the simpler categorical formulation despite this argument: our
+downstream consumer is a rule engine that dispatches on discrete
+severity buckets, and any smoother score would just be re-bucketed
+before it reached the user.
 
 \subsection{Skin-type and cosmetic assessment}
-Skin-type classification has received less academic attention than
-lesion classification, and most published pipelines come from
-industry rather than academia. We were unable to find a widely-cited
-academic benchmark for the four-class oily / dry / normal /
-combination task. This is one reason our own results on skin type are
-harder to compare to external numbers than our acne results are.
+Skin-type classification is under-served in the academic literature;
+most published pipelines come from industry rather than academia.
+We could not find a widely-cited benchmark for the four-class
+oily / dry / normal / combination task, which is why our skin-type
+numbers are harder to compare to external work than our acne numbers.
+This gap in the literature is one reason the Kaggle community dataset
+we ended up using is the best available option rather than an
+uncontroversial one.
 
 \subsection{Multi-label medical image classification}
-Because acne, pores, and blackheads can co-occur on the same face, we
-also drew on the multi-label medical-imaging literature. The
-architecture pattern we ultimately adopted for skin conditions ---
-independent sigmoid outputs trained with binary cross-entropy and
-per-class \(F_1\) evaluation --- is standard in chest-X-ray
-classification~\cite{rajpurkar2017chexnet} and translates cleanly to
-our setting.
+The Phase-3 skin-conditions refactor from softmax to sigmoid + BCE
+is not something we invented: it is standard practice in multi-label
+medical imaging, most famously in chest-X-ray
+classification~\cite{rajpurkar2017chexnet}. Independent sigmoid heads,
+binary cross-entropy with per-class positive weights, and per-class
+\(F_1\) reporting all transferred cleanly to our setting; the credit
+belongs to that line of work.
 
 \section{Commercial and industrial products}
 
@@ -573,28 +601,21 @@ on the accuracy and honesty of the report they return.
 \chapter{Academic Background}\label{ch:academic}
 %==============================================================================
 
-This chapter compresses the deep-learning material that the rest of
-the book relies on. Readers already familiar with convolutional neural
-networks, transfer learning, multi-label classification, and standard
-training practice can skip straight to \Cref{ch:data}.
+This chapter is a short refresher on the deep-learning ideas that
+the rest of the book rests on, framed each time in the way they
+actually show up in \cara rather than as a generic tutorial.
 
-\section{Image classification, formally}
+\section{Image classification}
 
-A single-label image classifier is a function
-\(f_\theta : \mathcal{X} \to \Delta^{K-1}\) parameterised by weights
-\(\theta\), where \(\mathcal{X}\) is the set of input images and
-\(\Delta^{K-1}\) is the probability simplex over \(K\) classes.
-Training minimises the empirical (weighted) cross-entropy loss
-
-\begin{equation}
-    \mathcal{L}(\theta) = -\frac{1}{N}\sum_{i=1}^{N} \sum_{k=1}^{K}
-        w_k \, y_{i,k} \, \log f_\theta(x_i)_k
-    \label{eq:xent}
-\end{equation}
-
-on a dataset \(\{(x_i, y_i)\}_{i=1}^N\), where \(y_i\) is a one-hot
-target and \(w_k\) is a per-class weight used to counteract class
-imbalance (\Cref{sec:imbalance}).
+At its heart, image classification is a mapping from an image to
+one of a few predefined categories. In \cara those categories are
+\emph{clear / mild / moderate / severe} acne, \emph{oily / dry /
+normal / combination} skin, or the presence of individual skin
+conditions such as pores and blackheads. Single-label heads
+(``pick exactly one'') use a softmax so that the class
+probabilities sum to one. Multi-label heads (``pick any subset,
+possibly empty''), which we return to in
+\Cref{sec:multilabel-formal}, use independent sigmoids instead.
 
 \section{Multi-label classification}\label{sec:multilabel-formal}
 
@@ -603,87 +624,39 @@ skin type: the categories are mutually exclusive by definition). The
 third --- skin conditions --- is multi-label: a face can have
 blackheads AND enlarged pores simultaneously, or neither. A softmax
 over five categories, as we discovered in Phase 3, is mathematically
-incapable of representing ``neither''.
-
-A multi-label classifier replaces the softmax head with independent
-sigmoid outputs, one per class. Training minimises binary cross-entropy
-(BCE) with an optional positive weight:
-
-\begin{equation}
-    \mathcal{L}_{\text{BCE}}(\theta) = -\frac{1}{N}\sum_{i=1}^{N}
-    \sum_{k=1}^{K}\Big[
-        p_k \, y_{i,k}\, \log \sigma(z_{i,k})
-        \;+\;
-        (1-y_{i,k})\, \log \bigl(1-\sigma(z_{i,k})\bigr)
-    \Big]
-    \label{eq:bce}
-\end{equation}
-
-where \(\sigma\) is the sigmoid, \(z_{i,k}\) the logit for class
-\(k\) on sample \(i\), \(y_{i,k}\in\{0,1\}\) the multi-hot target,
-and \(p_k\) the positive weight (used to counter class imbalance
-per output). Prediction is a per-class threshold, typically 0.5.
-Because the loss decomposes over classes, the model can output any
-subset of labels, including the empty set --- and this is exactly why
-the multi-label formulation was the right fit for skin conditions.
+incapable of representing ``neither'': softmax outputs sum to one,
+so \emph{something} always has to fire. Replacing the softmax with
+independent sigmoids (and training with binary cross-entropy) turns
+each class into its own yes / no decision, and the empty set ---
+``no notable conditions'' --- becomes a legal output. This is
+exactly why we adopted the multi-label formulation for the
+skin-conditions model.
 
 \section{Convolutional neural networks}
 
-CNNs~\cite{lecun1998gradient} exploit two properties of images:
-translation equivariance (a face is still a face when it moves five
-pixels to the right) and locality (nearby pixels are correlated). A
-convolutional layer computes
+Convolutional neural networks (CNNs)~\cite{lecun1998gradient} are
+the workhorse of computer vision because they combine two useful
+properties: they recognise a feature regardless of where in the
+image it appears, and each layer looks only at nearby pixels.
+Stacking convolutions builds a hierarchy of features, from edges
+and textures in the shallow layers to whole objects near the top.
+This progression matches what acne grading actually needs: local
+texture (pimples) plus global layout (how many, how spread out).
 
-\begin{equation}
-    Y_{c,i,j} = \sigma\!\left( b_c + \sum_{c'} \sum_{u,v}
-        K_{c,c',u,v}\, X_{c',\,i+u,\,j+v} \right)
-    \label{eq:conv}
-\end{equation}
+\section{Why we chose \effnet}
 
-for each output channel \(c\), spatial position \((i,j)\) and
-non-linearity \(\sigma\). Stacking convolutional layers with pooling
-and non-linearities produces a hierarchy of features: edges and
-textures in the shallow layers, object parts in the middle layers,
-and semantic categories near the head.
-
-\section{From AlexNet to EfficientNet}
-
-The past decade of image classification is essentially a story of
-progressively better trade-offs between depth, width, resolution, and
-compute:
-
-\begin{itemize}
-    \item \textbf{AlexNet}~\cite{krizhevsky2012alexnet} (2012) proved
-        that a deep CNN on GPU could crush hand-crafted features on
-        ImageNet.
-    \item \textbf{VGG}~\cite{simonyan2015vgg} pushed depth using small
-        \(3\times 3\) filters.
-    \item \textbf{ResNet}~\cite{he2016deep} introduced residual
-        connections that allowed training networks with hundreds of
-        layers.
-    \item \textbf{Inception}~\cite{szegedy2015going} and its
-        successors varied filter sizes in parallel.
-    \item \textbf{EfficientNet}~\cite{tan2019efficientnet} performed a
-        \emph{compound scaling} of depth, width, and input resolution
-        subject to a fixed compute budget, producing a family of
-        models that dominated the accuracy--FLOP frontier.
-\end{itemize}
-
-We chose the smallest member of that family, \effnet. The choice
-is worth spelling out:
-
-\begin{observation}
-\effnet has approximately \num{5.3} million parameters. Our
-fine-tuned version has about \num{4.01} million parameters,
-including a small custom head sized to the task (2 units for the
-multi-label skin-conditions model, 4 for the two single-label
-models). At \(224\times 224\) input it requires roughly
-\num{0.39} GFLOPs per forward pass, small enough to run three
-sequential inferences on a laptop CPU in under two seconds ---
-our latency target. That target, and the CPU-only constraint
-behind it, was set by the machines the team actually had. Every
-architecture decision downstream is coloured by it.
-\end{observation}
+\effnet~\cite{tan2019efficientnet} is a compact CNN backbone that
+scales depth, width, and input resolution together against a fixed
+compute budget. We use \effnet-B0, the smallest family member,
+because its ImageNet-pretrained weights are strong per parameter
+and its footprint keeps three sequential inferences comfortably
+within the response-time budget of a web request. The choice was
+validated empirically in the Phase-2 bake-off (\Cref{sec:phase2-arch}),
+where \effnet beat ResNet, DenseNet, and a Vision Transformer on
+ACNE04. Our fine-tuned model has about \num{4.01}~million parameters
+(the head is a dropout layer plus a single linear layer, sized 2
+or 4 depending on the task) and roughly \num{0.39}~GFLOPs per
+forward pass at \(224 \times 224\).
 
 \begin{figure}[htbp]
     \centering
@@ -697,21 +670,17 @@ architecture decision downstream is coloured by it.
 
 \section{Transfer learning}
 
-Training a modern CNN from random weights on 1{,}000 images is a
-recipe for overfitting. Transfer learning
-\cite{yosinski2014transferable} solves this by initialising the
-network with weights pretrained on a large source dataset --- for us,
-ImageNet-1k~\cite{deng2009imagenet} --- and then adapting the model
-to the target task. Two knobs control the process:
-
-\begin{itemize}
-    \item Which layers to freeze and for how long.
-    \item How the learning rate differs between the pretrained backbone
-        and the newly-initialised head.
-\end{itemize}
-
-Our two-phase recipe (\Cref{sec:two-phase}) is a straightforward
-instance of this pattern.
+Training a modern CNN from random weights on a few thousand images
+overfits almost immediately. Transfer
+learning~\cite{yosinski2014transferable} works around this by
+starting from weights that were already trained on a much larger
+dataset --- ImageNet~\cite{deng2009imagenet} in our case --- and
+then adapting them to the target task. In practice this is what
+lets us fine-tune three different skin classifiers on datasets that
+each contain only a few thousand labelled examples. Our two-stage
+recipe (\Cref{sec:two-phase}) --- head-only warm-up followed by
+partial unfreeze of the upper backbone blocks --- was adopted in
+Phase 2 and carried into Phase 3 unchanged.
 
 \section{Regularisation and augmentation}
 
@@ -745,11 +714,17 @@ derived from sklearn's balanced weighting rule:
 
 where \(N\) is the total number of training samples, \(K\) the number
 of classes, and \(n_k\) the number of samples in class \(k\). The
-weights we actually used are listed in \Cref{ch:data}.
+intuition is simple: a class with few samples gets a large weight so
+that each of its examples counts for more in the loss, and a class
+with many samples gets a small weight so that it does not dominate.
+Multiplying the standard cross-entropy loss by \(w_k\) whenever the
+true class is \(k\) is enough to bring rare classes back into the
+gradient. The weights we actually used are listed in \Cref{ch:data}.
 
-For multi-label tasks (\Cref{sec:multilabel-formal}) we use the
-positive weight \(p_k = n_k^{\text{neg}} / n_k^{\text{pos}}\) inside
-BCE, clipped to \([0.1, 10]\) to keep the loss numerically stable.
+For multi-label tasks (\Cref{sec:multilabel-formal}) we use a
+per-class positive weight inside BCE, computed as the ratio of
+negative to positive samples for that class, clipped to
+\([0.1, 10]\) to keep the loss numerically stable.
 
 \section{Optimisation}
 
@@ -761,54 +736,15 @@ multi-label model, validation macro-\(F_1\)), not by training loss.
 
 \section{Rule-based systems and BLP}
 
-The last piece of academic background is on the recommendation side.
 Business Logic Processing (BLP) is our internal name for the
-data-driven, deterministic rule engine that converts model outputs
-into user-facing advice. It is closer in spirit to a decision table
-than to a formal rule system such as Datalog, but the important
-point is that every recommendation is produced by evaluating a
-hand-written rule against the model's structured prediction. There
-is no learning component in the recommendation step, by design: any
-recommendation shown to the user can be justified by pointing at a
-single entry in a JSON file. \Cref{sec:blp-engine} describes the
+deterministic rule engine that converts model outputs into
+user-facing advice. It is closer in spirit to a decision table than
+to a formal rule system such as Datalog: every recommendation is
+produced by evaluating a hand-written rule against the model's
+structured prediction, and any recommendation shown to the user can
+be traced to a single entry in a JSON file. This was a Phase-1
+commitment that never wavered. \Cref{sec:blp-engine} describes the
 engine we ultimately built.
-
-\section{Softmax, cross-entropy and their gradient}
-
-Every one of our single-label heads ends with a softmax layer
-
-\begin{equation}
-    p_k = \frac{\exp(z_k)}{\sum_{j=1}^{K}\exp(z_j)},
-    \label{eq:softmax}
-\end{equation}
-
-whose input \(z\) is the logit vector produced by the final linear
-layer. Cross-entropy loss against a one-hot target \(y\) evaluates to
-\(\mathcal{L} = -\log p_{k^*}\) where \(k^*\) is the index of the
-true class. A short calculation gives the intuitive gradient
-\(\partial \mathcal{L}/\partial z_k = p_k - y_k\), which is the
-reason the softmax--cross-entropy combination is numerically and
-computationally so pleasant.
-
-\section{Batch normalisation}
-
-Every stage of an EfficientNet contains batch normalisation layers
-\cite{ioffe2015batchnorm}, which whiten the intermediate activations
-before the non-linearity:
-
-\begin{equation}
-    \hat{a}_{c} = \gamma_c \cdot \frac{a_c - \mu_c}{\sqrt{\sigma_c^2 + \epsilon}} + \beta_c.
-    \label{eq:bn}
-\end{equation}
-
-Two consequences matter for our project. First, batch norm reduces
-the sensitivity to the initial learning rate, which stabilised
-fine-tuning in our two-phase recipe. Second, the running mean and
-variance are estimated on the fly during training and then frozen at
-inference time --- forgetting to switch the model to
-\texttt{eval()} mode before inference silently corrupts predictions,
-so every code path that loads a checkpoint in \cara does it
-explicitly.
 
 \section{Metrics beyond accuracy}\label{sec:metrics}
 
@@ -847,76 +783,129 @@ because the \emph{same} model trained on the \emph{same} architecture
 gave completely different real-world behaviour before and after each
 data intervention.
 
-\section{Phase 1: the initial data landscape}
+\section{Phase 1: mapping the data landscape (no code yet)}
 
-We began with an ambitious plan: five models, one for each of five
-skin aspects (acne severity, skin type, blackheads, pores, dark
-spots). For each aspect we searched public repositories for the
-first dataset that seemed to match. Two Phase-1 choices later turned
-out to be catastrophic:
-
-\begin{enumerate}
-    \item The initial acne dataset was an \textbf{object-detection}
-        dataset --- photographs annotated with bounding boxes around
-        individual pimples. The idea was to run an object detector,
-        count boxes, and derive severity from the count. In practice
-        this meant almost no ``clear'' examples (nobody annotates
-        healthy faces with zero boxes), and the signal the eventual
-        classifier learned was ``how much stuff got detected'', not
-        ``what is the clinical severity''.
-    \item The initial ``healthy'' folder inside the skin-issues
-        dataset consisted of images with the filename prefix
-        \texttt{levle0\_*.jpg} --- level-0 acne from a different
-        dataset. Level 0 is \emph{not} the same as clean skin. Those
-        photographs actually contain visible pimples and blackheads,
-        just less severely. Trained as a ``healthy'' class it taught
-        the model exactly the wrong concept.
-\end{enumerate}
-
-Neither problem was visible in Phase 1 because Phase 1 evaluations
-were the classical train / validation / test splits of the same
-folders. The model happily memorised the labels it was given.
-
-\section{Phase 2: consolidation on cleaner anchor data}
-
-After the proof of concept we tightened the sourcing rules. Every
-dataset had to be a classification dataset (never a detection set
-repurposed as classification), had to have visible labels for every
-class we cared about, and had to be spot-checked by a human before
-being accepted. We settled on the following combination for our four
-tasks (five, temporarily, before Phase 3 collapsed skin issues down
-to a single multi-label model):
+Phase 1 was a research phase. We did not train, evaluate, or even
+implement anything during Phase 1. What we did do was decide which
+skin aspects the product would cover and go looking for public
+datasets that we \emph{believed} could support each of them. Our
+initial plan was ambitious: five separate models, one for each of
+acne severity, skin type, blackheads, pores, and dark spots. For
+each aspect we shortlisted the best-looking candidate we could find
+in the free / open-source world. On paper the shortlist looked
+reasonable. We also settled, during Phase 1, on two decisions that
+never changed later:
 
 \begin{itemize}
-    \item \textbf{Acne severity} --- ACNE04~\cite{wu2019acne04}, used
-        purely as a classification dataset (labels only, bounding
-        boxes discarded).
-    \item \textbf{Skin type} --- a Kaggle community dataset with
-        four classes (oily / dry / normal / combination), split into
-        train / valid / test folders.
-    \item \textbf{Skin issues (Phase 2 version)} --- a merged Roboflow
-        dataset with five classes (blackheads / dark spots /
-        healthy / pores / wrinkles). \emph{This is the dataset that
-        blew up in Phase 3.}
+    \item Recommendations would be produced by a deterministic
+        rule engine (BLP), not by a learned recommender. This was
+        a Phase-1 commitment that we never revisited.
+    \item We leaned toward the idea that each skin aspect would
+        eventually be handled by its own dedicated model, rather
+        than by one large multi-task network. The reasoning was
+        simple: if a single monolithic model misbehaves on a real
+        user photograph, it is very hard to say which sub-problem
+        is at fault. But since Phase 1 was research-only and no
+        model had actually been trained yet, this remained an
+        \emph{open question} rather than a committed decision;
+        we knew we would have to answer it for real once we
+        started scaling up. The final decision was made in
+        Phase 3 (\Cref{sec:phase3-scale-up}).
 \end{itemize}
 
-Phase 2 numbers looked strong on their own validation splits. It was
-only when we started running real user selfies through the pipeline
-that we realised those numbers were measuring the wrong thing.
+The important caveat is that in Phase 1 the datasets were only
+\emph{candidates on disk}. We had not yet trained a single model on
+them and therefore had no way to see the quality problems that
+would later surface in Phase 3. Phase 1 ended with a plan, a
+recommendation strategy, a shortlist of datasets, and no code.
 
-\section{Phase 3: the dataset audit}
+\section{Phase 2: implementing a POC on ACNE04 only}
 
-Phase 3 began with a single failing photograph: a well-lit adult
-selfie of a clean face that came back as \emph{severe acne, oily
-skin, wrinkles detected}. Every part of that answer was wrong.
-Chasing the cause down took us through the data, the preprocessing
-pipeline, and the loss functions. The pipeline and loss fixes are
-covered in \Cref{ch:algorithm}; this section covers what we found
+Phase 2 was the proof of concept. We deliberately did \emph{not}
+attempt to build all the models at once. Instead, we picked one
+dataset --- the acne-severity dataset ACNE04~\cite{wu2019acne04} ---
+and used it as a common benchmark to decide which backbone
+architecture our whole system would be built on
+(\Cref{sec:phase2-arch}). ACNE04 was the right choice for that job:
+it is the cleanest and best-documented of the datasets we had
+shortlisted, has four ordinal severity classes, and its
+in-the-wild photographs resemble the kind of image a real user
+would upload.
+
+Because Phase 2 only touched ACNE04, none of the dataset-quality
+problems described later in this chapter were visible yet. Phase 2
+ended with a working end-to-end POC: an image upload flow, an
+\effnet acne-severity classifier, a first version of the BLP rule
+engine covering the acne branch, and a simple report page. It
+proved that the shape of the product was viable; it did not yet
+prove that our other candidate datasets would hold up.
+
+\section{Phase 3: expanding to multiple datasets, and everything that broke}
+
+Phase 3 turned the POC into the final product. That meant taking
+the working \effnet backbone and instantiating it three times ---
+once for acne severity, once for skin type, once for the group of
+secondary skin issues --- each with its own dataset, its own
+training run, and its own head. This is also the phase where the
+codebase in front of you was actually written; almost none of the
+Phase-2 code survives verbatim into the current repository.
+
+The moment we started training the second and third models on the
+non-ACNE04 datasets that Phase 1 had shortlisted, cracks appeared.
+Some were in the data itself, some in the preprocessing pipeline,
+some in the loss function. \Cref{ch:algorithm} covers the pipeline
+and loss fixes; the rest of this chapter documents what we found
 when we looked at the training folders themselves.
+
+Two Phase-1 dataset choices, in particular, turned out to be
+catastrophic once real-world testing began:
+
+\begin{enumerate}
+    \item An early candidate for the acne task was an
+        \textbf{object-detection} dataset --- photographs annotated
+        with bounding boxes around individual pimples. The idea was
+        to run an object detector, count boxes, and derive severity
+        from the count. In practice this would have meant almost no
+        ``clear'' examples (nobody annotates healthy faces with zero
+        boxes), and the signal any eventual classifier would learn
+        would have been ``how much stuff got detected'', not ``what
+        is the clinical severity''. We dropped this idea in Phase 3
+        in favour of using ACNE04 as a pure classification dataset
+        (labels only, bounding boxes discarded).
+    \item The ``healthy'' folder inside the initial multi-issue skin
+        dataset consisted of images with the filename prefix
+        \texttt{levle0\_*.jpg} --- level-0 acne from a different
+        dataset. Level 0 is \emph{not} the same as clean skin.
+        Those photographs actually contain visible pimples and
+        blackheads, just less severely. Trained as a ``healthy''
+        class it taught the model exactly the wrong concept. This
+        was invisible in Phase 1 (we never trained on it) and would
+        have been invisible in Phase 2 as well (we only touched
+        ACNE04). It surfaced the moment we ran the newly trained
+        skin-issues model on a real user selfie in Phase 3.
+\end{enumerate}
+
+The lesson from these two examples is one we return to throughout
+the book: a validation-split accuracy number computed on the same
+folder the model was trained on cannot detect a mislabelled folder.
+The model happily memorises whatever labels it is given. Only real
+photographs from outside the training distribution can expose the
+gap.
+
+\section{The Phase-3 dataset audit}
+
+Phase 3 began in earnest with a single failing photograph: a
+well-lit adult selfie of a clean face that came back as \emph{severe
+acne, oily skin, wrinkles detected}. Every part of that answer was
+wrong. Chasing the cause down took us through the data, the
+preprocessing pipeline, and the loss functions. The pipeline and
+loss fixes are covered in \Cref{ch:algorithm}; this section covers
+what we found when we looked at the training folders themselves.
 
 \subsection{The ``healthy'' folder was not healthy}
 
-The Phase-2 skin-issues dataset contained a \texttt{healthy/}
+The initial multi-issue skin-issues dataset that we picked up in
+Phase 3 (from the Phase-1 shortlist) contained a \texttt{healthy/}
 subfolder whose files were named \texttt{levle0\_*.jpg}. Those
 images had originally been drawn from an external acne-severity
 level-0 collection. Level 0 is the lowest acne grade, but it is
@@ -930,13 +919,13 @@ diagnosis exactly.
 
 \subsection{The ``wrinkles'' folder was elderly stock photography}
 
-The Phase-2 \texttt{wrinkles/} folder came from a Roboflow crop of
-stock photographs of elderly faces. The images share a very
-specific photographic style: studio lighting, posed smile, older
-subjects, high-quality DSLR. What the classifier learned was
-``photograph of an older-looking person'', not ``fine lines on
-skin'', and it accordingly fired \texttt{wrinkles} on any
-mid-adult selfie.
+The \texttt{wrinkles/} folder in the same initial multi-issue
+dataset came from a Roboflow crop of stock photographs of elderly
+faces. The images share a very specific photographic style: studio
+lighting, posed smile, older subjects, high-quality DSLR. What the
+classifier learned was ``photograph of an older-looking person'',
+not ``fine lines on skin'', and it accordingly fired
+\texttt{wrinkles} on any mid-adult selfie.
 
 Both folder problems share the same underlying failure: the class
 label describes a superficial property of the image rather than
@@ -944,9 +933,10 @@ the feature the label claims to identify. Neither was visible
 under train-split evaluation because the train and validation
 splits share the same photographic style; both were visible the
 moment a real user upload arrived. This is one of the reasons the
-Phase-2 model performed so much worse on real photographs than its
-validation number suggested, and it is why we now insist on
-spot-checking every folder before it is accepted into training.
+initial Phase-3 skin-issues model performed so much worse on real
+photographs than its validation number suggested, and it is why
+we now insist on spot-checking every folder before it is accepted
+into training.
 
 \subsection{Softmax cannot say ``none''}
 
@@ -1073,8 +1063,9 @@ the reasons documented in \Cref{ch:data} above and re-summarised in
 
 \begin{table}[htbp]
     \centering
-    \caption{Classes dropped from the Phase-2 skin-issues dataset,
-    with reasons.}
+    \caption{Classes dropped from the initial multi-issue skin-issues
+    dataset (the Phase-1 shortlist candidate, first trained on in
+    Phase 3), with reasons.}
     \label{tab:dropped-classes}
     \small
     \begin{tabularx}{\linewidth}{lXl}
@@ -1153,15 +1144,15 @@ Both are within the safety clip range \([0.1, 10]\) so we do not
 have to worry about numerical instability, and both are recomputed
 whenever the dataset changes.
 
-\section{Splits and reproducibility}
+\section{Splits}
 
 For datasets we split ourselves (\texttt{acne\_severity} and
 \texttt{skin\_conditions}) we use a stratified random 70 / 15 / 15
-split with a fixed seed so the exact split is reproducible. Once
-generated, splits are held constant across all training runs so
-that a validation curve from one week is comparable to one from the
-next. The skin-type dataset is used as-published, with the authors'
-existing train / valid / test folders respected.
+split with a fixed seed, so the exact split is the same across
+training runs and a validation curve from one week can be compared
+against one from the next. The skin-type dataset is used as
+published, with the authors' existing train / valid / test folders
+respected.
 
 \section{Cleaning}
 
@@ -1205,18 +1196,6 @@ cues (colour, texture) the model relies on. This is one of the
 pitfalls that is easy to miss when reusing recipes from the ImageNet
 literature. The final augmentation stack is deliberately gentle.
 \end{observation}
-
-\section{The label agreement problem}
-
-The community datasets we used for skin type and skin conditions
-did not come with a documented labelling protocol, and on our own
-spot-checks two team members looking at the same photograph
-frequently disagreed on the label. The most confusable pairs were
-\emph{combination} vs \emph{oily} and \emph{normal} vs \emph{dry}.
-This puts a ceiling on how well any classifier can do on the
-dataset --- ``the model reproduces the label distribution about as
-well as a second annotator would'' is a more useful frame than
-``the model is X\,\% wrong''.
 
 %==============================================================================
 \chapter{Our Algorithms}\label{ch:algorithm}
@@ -1278,48 +1257,59 @@ Every stage in this list has an entry in the rest of this chapter.
 \section{Why \effnet, and why three of them}
 
 Choosing the backbone was an early decision that survived all three
-phases. \effnet gives us the best-known accuracy-to-FLOPs ratio in
-the small-model regime and, crucially, is small enough to train on
-a laptop CPU in a few hours. We do not have GPUs, so the entire
-project was built with the constraint that a full retrain of every
-model must complete overnight on the same machines we develop on.
+project phases. \effnet was picked at the end of Phase 2 through the
+head-to-head bake-off in \Cref{sec:phase2-arch}, where it beat
+ResNet, DenseNet, and a Vision Transformer on the same ACNE04
+benchmark. Beyond the raw accuracy number, its pretrained ImageNet
+weights are extremely strong per parameter and its smallest family
+member (\effnet-B0) is compact enough to run three sequential
+inferences on modest hardware inside our target latency, which
+matters for a web application.
 
-The follow-up question --- ``one big model or three small ones?'' ---
-was the main subject of Phase 2 and is answered in
-\Cref{sec:phase2-arch}. The short version is that a single
+The follow-up question --- ``one big model or three small ones?''
+--- had been an open leaning since Phase 1 rather than a settled
+decision, and Phase 3 was where we finally had to answer it in code
+(\Cref{sec:phase3-scale-up}). The short version is that a single
 multi-task \effnet cannot balance three tasks whose datasets have
 different sizes, different label noise, and different natural class
-priors, so three independent \effnet models won cleanly.
+priors, and that a shared backbone makes it very hard to attribute a
+real-world failure to a specific sub-task. Three independent
+\effnet models won cleanly.
 
-\section{Two-phase transfer learning}\label{sec:two-phase}
+\section{Two-stage transfer learning}\label{sec:two-phase}
 
-Each of the three models is trained with the following two-phase
+Each of the three models is trained with the following two-stage
 recipe, taken directly from
-\texttt{model\_service/training/train.py}:
+\texttt{model\_service/training/train.py}. It is the same recipe
+that \effnet used to win the Phase-2 bake-off (\Cref{sec:phase2-arch});
+we adopted it from the very beginning and never departed from it.
+Note that the two ``stages'' below refer to \emph{training stages}
+of a single model, not to the three project phases discussed
+elsewhere in the book.
 
 \begin{description}
-    \item[Phase 1 --- head only.] The entire \effnet backbone is
+    \item[Stage 1 --- head only.] The entire \effnet backbone is
         frozen. Only the newly-initialised classifier head is
         trained, with learning rate \(10^{-3}\). This lets the head
         learn to project ImageNet features onto the new label space
         without disturbing them.
-    \item[Phase 2 --- full fine-tune.] The upper blocks of the
+    \item[Stage 2 --- full fine-tune.] The upper blocks of the
         backbone (blocks 6--8, about 3.16 million of the 4.01 million
         parameters, i.e.\ 78.8\,\%) are unfrozen and trained with
         learning rate \(10^{-4}\); the head keeps its
         \(10^{-3}\).
 \end{description}
 
-Empirically, Phase 1 alone gets us most of the way to the final
-accuracy on all three tasks; Phase 2 typically adds another
+Empirically, Stage 1 alone gets us most of the way to the final
+accuracy on all three tasks; Stage 2 typically adds another
 6--10 percentage points on the single-label tasks and pushes
 macro-\(F_1\) from around \(0.94\) to above \(0.98\) on the
 multi-label task.
 
 \Cref{fig:val-curves} shows the actual validation-accuracy curves
 for the acne severity task, taken from
-\texttt{training\_log.txt}. Both phases are visible: Phase 1
-plateaus around \(0.65\); Phase 2 continues from a similar starting
+\texttt{training\_log.txt}. Both stages are visible: Stage 1
+plateaus around \(0.65\); Stage 2 continues from a similar starting
 point and lifts the best validation accuracy to \(0.729\).
 
 \begin{figure}[htbp]
@@ -1349,105 +1339,217 @@ one we ship.
     \label{fig:cond-curves}
 \end{figure}
 
-\section{Phase 2: comparing four candidate architectures}\label{sec:phase2-arch}
+\section{Phase 2: comparing four backbone architectures on ACNE04}\label{sec:phase2-arch}
 
-Phase 2 was the phase in which we made the architecture decision
-that survives to the final system. We evaluated four candidates on
-our then-current data (the Phase-2 datasets described in
-\Cref{ch:data}). All four sat behind the same preprocessing (which,
-in retrospect, was different from the runtime preprocessing --- but
-Phase 2 did not know that yet).
+Phase 2 was the phase in which we picked the backbone that survives
+to the final system. The setup was deliberate: we wanted the choice
+to be data-driven, so we ran a head-to-head bake-off on a single
+common benchmark --- the acne-severity dataset ACNE04 --- and each
+of the four team members took ownership of one architecture from a
+genuinely different family of computer-vision models. Each
+candidate was implemented in a separate side project (not visible
+in this repository); the final numbers were compared side by side
+at the end of Phase 2.
 
-\subsection{Candidate 1 --- single multi-task \effnet}
-A shared \effnet backbone with three classification heads. Loss
-\(\mathcal{L}=\lambda_1\mathcal{L}_{\text{acne}}+\lambda_2\mathcal{L}_{\text{type}}
-+\lambda_3\mathcal{L}_{\text{issues}}\) with fixed \(\lambda\)
-values.
+Every candidate used the same acne dataset (ACNE04, treated as a
+four-class classification problem), the same train / validation /
+test split, and the same evaluation protocol. Every candidate was
+initialised from ImageNet-pretrained weights and fine-tuned on
+ACNE04 --- otherwise we would have been measuring the value of
+pretraining rather than the value of the architecture.
 
-\emph{Why it failed.} Three problems compounded:
+Two design decisions that later became load-bearing were already in
+place before the bake-off began. First, from Phase 1 the
+recommendation layer was going to be a deterministic rule engine
+(BLP), not a learned fusion --- so nothing in this comparison was
+about how model outputs should be combined into recommendations,
+only about which model gives the best per-task predictions. Second,
+we had already decided that in the eventual multi-model system each
+skin aspect would have its own dedicated backbone. The purpose of
+Phase 2 was to answer ``which backbone family?'', not ``one model or
+many?''.
 
-\begin{enumerate}
-    \item The three datasets have different sizes and different
-        levels of label noise, and the three heads converge at
-        different rates. A fixed loss weighting therefore does
-        not balance the tasks well throughout training.
-    \item The larger skin-type / skin-issues datasets dominate
-        the shared backbone. Acne accuracy suffers because the
-        backbone drifts toward features useful for the other
-        heads.
-    \item Softmax confidence on any one head becomes hard to
-        interpret. A moderate probability on the acne head no
-        longer necessarily means ``uncertain about acne'' --- it
-        can also reflect the backbone being pulled elsewhere by
-        another head's gradients.
-\end{enumerate}
+\subsection{Candidate 1 --- ResNet (classical residual CNN)}
 
-\subsection{Candidate 2 --- three independent \effnet + weighted-vote fusion}
-Three independent \effnet classifiers, one per task; the
-recommendation composed by a small set of per-model score
-thresholds combined by a weighted vote.
+ResNet~\cite{he2016deep} is the classical residual CNN and the
+backbone that has been the default baseline for image classification
+for a decade. Residual connections let gradients flow directly
+through skip paths, which is why deep ResNets train stably.
 
-\emph{Why it did not win.} A weighted vote is a scalar; the rule
-set a skincare product actually needs is conjunctive over
-multiple sub-tasks (``if acne is moderate \emph{and} skin type is
-oily, recommend a BHA and warn against occlusives''). Building
-rules like these on top of a single scalar score would amount to
-re-implementing a rule engine underneath the vote, which is worse
-than starting from a proper rule engine directly.
+\emph{Result on ACNE04: \(\sim 55\,\%\) validation accuracy.} On a
+few thousand mildly-labelled facial photographs this was the weakest
+of the four candidates. The most likely explanation is that ResNet
+was designed and pretrained for very large-scale classification
+tasks (millions of ImageNet images); its raw feature extractor is
+good, but it does not carry the strong per-task inductive biases of
+the newer architectures, and on our dataset scale the extra capacity
+turns into an overfitting liability rather than an accuracy boost.
 
-\subsection{Candidate 3 --- three independent \effnet + learned MLP fusion}
-Three independent classifiers, followed by a small MLP that
-consumes the concatenated softmax vectors and produces the
-recommendation set.
+\subsection{Candidate 2 --- DenseNet (dense feature reuse)}
 
-\emph{Why it failed.} The recommendation vocabulary is a labelled
-set (which ingredients apply to which combination of predictions),
-and building ground truth for that vocabulary requires a
-dermatologist. Without such a supervision signal the MLP had
-nothing meaningful to train against, and any labels we could
-generate ourselves would just be a reflection of the rules we
-would have written by hand anyway --- with the added cost that the
-MLP would then obscure the trace from prediction to
-recommendation, breaking our explainability rule
-(\Cref{sec:principles}).
+DenseNet~\cite{huang2017densely} connects every layer to every
+later layer in the same block, so each layer receives as input the
+concatenated feature maps of all its predecessors. In principle
+this improves gradient flow and encourages the network to reuse
+low-level features rather than relearn them at every depth --- a
+property that intuitively helps on small datasets, where relearning
+features is exactly what you cannot afford.
 
-\subsection{Candidate 4 --- three independent \effnet + rule-based BLP}
-Three independent classifiers, followed by a deterministic rule
-engine that walks a JSON rules file and unions all matching
-recommendations. Every recommendation shown to the user can be
-traced to a single JSON entry.
+\emph{Result on ACNE04: \(\sim 62\,\%\) validation accuracy.} A
+clear step up from ResNet. Dense feature reuse did seem to help
+extract more from a limited number of ACNE04 photographs, but the
+computational cost of concatenating many feature maps at every
+depth also made this the slowest of the CNN candidates during
+training, which mattered given the modest compute we had
+available.
 
-\emph{Why it won.} The rule engine is cheap, inspectable,
-testable, and satisfies the truthfulness rule by construction.
-Its shortcomings --- rules must be maintained by hand, and the
-rules file is the sole gatekeeper of coverage --- are minor in
-practice, because the rules file is small enough that a lint
-(which we wrote as a test) can enforce coverage over the entire
-label space.
+\subsection{Candidate 3 --- Vision Transformer (ViT)}
 
-\subsection{Summary of the Phase-2 comparison}
+The Vision Transformer~\cite{dosovitskiy2021vit} discards
+convolutions entirely and treats an image as a sequence of small
+patches, processed by self-attention. In theory this gives the
+model a much wider effective receptive field --- every patch can
+attend to every other patch from layer one --- which we suspected
+might help on acne, since severity depends both on individual
+lesions and on how many of them are spread across the face.
+
+\emph{Result on ACNE04: \(\sim 68\,\%\) validation accuracy.} ViT
+was the second-strongest candidate and the one that made the
+choice interesting rather than obvious. The global self-attention
+did seem to help capture the ``how spread out is the acne'' cue
+that is important for the moderate-vs-severe boundary. The
+practical downside is that transformer backbones are known to need
+more data and more compute than CNNs to hit their best numbers,
+and on ACNE04 --- with a few hundred images per class and a laptop
+CPU budget --- ViT was still visibly under-trained at the point
+where the compound-scaled EfficientNet had already converged.
+
+\subsection{Candidate 4 --- \effnet (winner)}
+
+\effnet~\cite{tan2019efficientnet} is a compound-scaled CNN that
+jointly balances depth, width, and input resolution against a
+fixed compute budget. Its ImageNet weights are extremely strong
+per parameter, and its small model in the family (\effnet-B0)
+fits comfortably in our compute budget.
+
+\emph{Result on ACNE04: \(\mathbf{73.1\,\%}\) validation accuracy;
+\(\mathbf{69.5\,\%}\) accuracy on the held-out test set.} Best of
+the four, by a clear margin. The two-stage training recipe we
+committed to from the beginning (\Cref{sec:two-phase}) worked
+particularly well here: with the backbone frozen for the first ten
+epochs the head alone already reached \(56.5\,\%\) validation
+accuracy, and unfreezing the upper layers for another five epochs
+lifted validation accuracy by another sixteen or so points to
+\(73.1\,\%\). No other candidate showed that kind of improvement
+from fine-tuning in the same compute envelope.
+
+The Phase-2 conclusion was straightforward: while ViT proved
+itself to be a very strong architecture and took second place,
+\effnet won cleanly. The most credible explanation is not that
+\effnet is a fundamentally smarter architecture than a Vision
+Transformer, but that its pretrained weights are so well tuned
+that on a dataset of our size fine-tuning goes further faster.
+Compound scaling and pretraining together gave us the best
+accuracy-per-parameter and the best accuracy-per-training-hour on
+the hardware we actually had, and that is the choice we shipped.
+
+\subsection{Summary of the Phase-2 bake-off}
 
 \begin{table}[htbp]
     \centering
-    \caption{Candidate architectures compared during Phase 2. The
-    fourth row is what we ship.}
+    \caption{Phase-2 architecture bake-off on ACNE04 acne severity.
+    Each candidate was trained from ImageNet-pretrained weights on
+    the same split with the same protocol.}
     \label{tab:phase2-arch}
     \small
-    \begin{tabularx}{\linewidth}{lXXX}
+    \begin{tabularx}{\linewidth}{lXlc}
         \toprule
-        \textbf{Candidate} & \textbf{Data needed} & \textbf{Explainable?} & \textbf{Verdict} \\
+        \textbf{Candidate} & \textbf{Family} & \textbf{Val.\ acc.} & \textbf{Verdict} \\
         \midrule
-        1. Single multi-task \effnet & The three per-task datasets & Softmax only & Rejected: tasks compete for capacity \\
-        2. 3 CNNs + weighted vote & The three per-task datasets & Partial      & Rejected: not expressive enough for compound rules \\
-        3. 3 CNNs + learned MLP fusion & Extra ingredient-level labels & No & Rejected: overfits, breaks explainability \\
-        4. 3 CNNs + rule-based BLP & The three per-task datasets & \textbf{Yes} & \textbf{Selected} \\
+        ResNet    & Classical residual CNN            & $\sim$55\,\%   & Baseline \\
+        DenseNet  & Densely-connected CNN             & $\sim$62\,\%   & Improvement \\
+        ViT       & Vision Transformer (self-attention) & $\sim$68\,\% & Runner-up \\
+        \effnet   & Compound-scaled CNN               & \textbf{73.1\,\%} & \textbf{Selected} \\
         \bottomrule
     \end{tabularx}
 \end{table}
 
-At the end of Phase 2 we shipped Candidate 4 and moved on to
-polishing the UI. Validation numbers looked good. Real users had
-not yet touched the system.
+At the end of Phase 2 we shipped a first proof of concept built on
+\effnet: an image upload flow, a single acne-severity classifier
+trained on ACNE04, a first version of the BLP rule engine covering
+the acne branch, and a report page. Validation numbers looked
+strong. There was one dataset in play, the recommendation layer
+was rule-based as promised from Phase 1, and no real user
+photographs from outside ACNE04 had yet been fed through the
+pipeline.
+
+\section{Phase 3: from a single-model POC to a multi-model application}\label{sec:phase3-scale-up}
+
+Phase 3 turned the POC into the final product. Because the POC only
+covered acne severity, the very first Phase-3 task was to
+instantiate the winning \effnet backbone twice more --- once for
+skin type, once for a group of secondary skin issues --- each with
+its own dataset and its own training run. This is the moment where
+the Phase-1 shortlist of datasets stopped being a plan and started
+being training material, and this is the moment where every
+weakness in that shortlist began to show.
+
+The multi-model layout also required a decision that Phase 2 had
+not needed to make. Given three per-task classifiers, how should
+their outputs be combined into a single report and a single
+recommendation list? We considered the following options:
+
+\begin{itemize}
+    \item \textbf{One big multi-task \effnet with three heads.} A
+        single shared backbone with three classification heads and
+        a weighted-sum loss. \emph{Rejected} because the three
+        datasets differ in size and label noise, the three heads
+        converge at different rates, and a shared backbone gets
+        pulled around by whichever head has the loudest gradient
+        signal at any moment --- exactly the kind of coupling that
+        makes it very hard to figure out which sub-problem is
+        misbehaving on a real user photograph.
+    \item \textbf{Three independent classifiers, weighted-vote
+        fusion.} Three independent \effnet classifiers, one per
+        task; a small set of per-model score thresholds combined
+        by a weighted vote to produce recommendations.
+        \emph{Rejected} because a scalar vote is not expressive
+        enough for compound rules of the form ``if acne is
+        moderate \emph{and} skin type is oily, recommend a BHA
+        and warn against occlusives''. To recover that
+        expressiveness we would have had to re-implement a rule
+        engine underneath the vote --- worse than starting from a
+        rule engine directly.
+    \item \textbf{Three independent classifiers, learned MLP
+        fusion.} Feed the concatenated softmax vectors into a
+        small MLP whose output is the recommendation set.
+        \emph{Rejected} because the recommendation vocabulary is
+        a labelled set (which ingredients apply to which
+        combination of predictions), and building ground truth
+        for that vocabulary requires a dermatologist. Without such
+        a signal the MLP has nothing meaningful to train against,
+        and any labels we could generate ourselves would just be
+        a reflection of the rules we would have written by hand
+        anyway --- with the added cost that the MLP would then
+        obscure the trace from prediction to recommendation,
+        breaking our Phase-1 explainability commitment.
+    \item \textbf{Three independent classifiers, rule-based BLP.}
+        Three dedicated \effnet classifiers plus a deterministic
+        rule engine that walks a JSON rules file and unions all
+        matching recommendations. Every recommendation shown to
+        the user can be traced to a single JSON entry.
+        \emph{Selected.} The rule engine was the recommendation
+        strategy we had committed to since Phase 1; the
+        independent-classifier design was the choice that gave us
+        the debuggability we wanted.
+\end{itemize}
+
+The selection here is not a new decision --- it is the
+consequence of the Phase-1 rule-based commitment plus the
+observation that a shared multi-task backbone would have made
+Phase-3 debugging materially harder. Everything that follows in
+this chapter is the story of what happened once that
+architecture met real user photographs.
 
 \section{Phase 3, part 1: real-world failures}\label{sec:phase3-failures}
 
@@ -1512,13 +1614,13 @@ with a rotation-retry fallback (see below) rather than adding a
 new dependency.
 
 \subsection{The dead-code discovery}
-The Phase-2 code already contained a full face-detection preprocessor
-in \texttt{model\_service/preprocessing/pipeline.py}. Its docstring
-promised: \emph{``Shared by both inference AND training so the
-distributions match.''} It was, in fact, never imported by the
-runtime path. The training scripts called it; the analysis service
-did not. Every real user upload was going straight into the model
-as a full uncropped image.
+The early Phase-3 codebase already contained a full face-detection
+preprocessor in \texttt{model\_service/preprocessing/pipeline.py}.
+Its docstring promised: \emph{``Shared by both inference AND
+training so the distributions match.''} It was, in fact, never
+imported by the runtime path. The training scripts called it; the
+analysis service did not. Every real user upload was going
+straight into the model as a full uncropped image.
 
 The fix was a small wiring change in the analysis service:
 instantiate the pipeline once, pass every uploaded image through
@@ -1943,16 +2045,14 @@ Unless stated otherwise, every experiment uses:
     \item \(224 \times 224\) input, ImageNet normalisation.
     \item AdamW, weight decay \num{1e-4}, cosine learning-rate
         schedule with a short warm-up.
-    \item Two-phase transfer learning as described in
+    \item Two-stage transfer learning as described in
         \Cref{sec:two-phase}.
     \item Early stopping on validation loss (or macro-\(F_1\) for
         multi-label) with patience 5.
-    \item Fixed seeds: Python, NumPy, and \pytorch all set to
-        \num{42}.
 \end{itemize}
 
-Training runs on a laptop CPU. A full retrain of all three models
-takes on the order of a few hours.
+A full retrain of all three models takes on the order of a few
+hours on the machines we develop on.
 
 \section{Failed experiment: naive resizing without face crop}
 
@@ -2006,32 +2106,38 @@ Recipes that work for object recognition do not automatically
 transfer to skin classification. The final augmentation stack is
 listed in \Cref{ch:data} and is deliberately gentle.
 
-\section{Two-phase versus single-phase training}
+\section{The two-stage training recipe}
 
-Before committing to the two-phase recipe (\Cref{sec:two-phase})
-we ran the same acne configuration as a single-phase full
-fine-tune from ImageNet initialisation. The single-phase run
-converged to a lower and less stable best-validation number and
-required more epochs to reach its plateau. We attribute the
-difference to the head-only Phase-1 warm-up, which prevents the
-freshly-initialised classifier head from pushing large,
-uninformed gradients back through the pretrained backbone before
-it has learned to project ImageNet features onto our label space.
-The two-phase schedule became the default for all three models.
+The two-stage transfer-learning recipe described in
+\Cref{sec:two-phase} --- head-only warm-up followed by an unfreeze
+of the upper backbone blocks --- was not the result of an ablation.
+We adopted it from the very first day we started training an
+\effnet model in Phase 2, and it is the recipe that produced the
+Phase-2 numbers reported in \Cref{sec:phase2-arch}. No other
+schedule was ever used for the \effnet model, so we did not have a
+one-stage baseline to compare against.
 
-\section{Backbone selection}
+We still consider the recipe a good default rather than a happy
+accident. The head-only warm-up prevents the freshly-initialised
+classifier head from pushing large, uninformed gradients back
+through the pretrained backbone before it has learned to project
+ImageNet features onto our label space; the follow-up fine-tune
+adapts the upper blocks to skin-specific features while leaving
+the lower, more generic layers alone. The three-way combination of
+frozen lower blocks, unfrozen upper blocks, and different learning
+rates for the backbone and head is what does the actual work.
 
-We considered three backbone families before committing:
-EfficientNet-B0, ResNet-50, and MobileNetV3-Small.
-\Cref{tab:backbones} summarises the trade-off. Given our
-CPU-only constraint and the requirement to run three models per
-request within a couple of seconds, \effnet was the only choice
-that kept accuracy within our target range while fitting the
-latency budget. ResNet-50 has roughly \(10\times\) the FLOPs of
-\effnet, which our informal timing measurements confirmed would
-push the total request latency well past our budget once three
-models had to run per request. MobileNetV3-Small would fit the
-budget with room to spare but its ImageNet top-1 accuracy is
+\section{Backbone selection revisited}
+
+The winning backbone was chosen empirically in the Phase-2 bake-off
+(\Cref{sec:phase2-arch}). \Cref{tab:backbones} shows why the choice
+also makes sense on paper: at \(224\times 224\) input, \effnet sits
+in the sweet spot of parameters and FLOPs for the compute we had
+to work with. ResNet-50 (a heavier ResNet variant than what we tested
+in Phase 2) has roughly ten times the FLOPs of \effnet, which would
+have pushed the total request latency well past our budget once
+three models had to run per request. MobileNetV3-Small would fit
+the budget with room to spare but its ImageNet top-1 accuracy is
 several points below \effnet, so we would have been paying for
 extra headroom we did not need.
 
@@ -2046,8 +2152,8 @@ extra headroom we did not need.
         \textbf{Backbone} & \textbf{Params (M)} & \textbf{FLOPs (G)} & \textbf{Verdict} \\
         \midrule
         MobileNetV3-Small & 2.5  & 0.06 & Fast, but ImageNet accuracy leaves headroom on the table \\
-        \effnet           & 5.3  & 0.39 & \textbf{Selected} --- best published accuracy in our FLOP budget \\
-        ResNet-50         & 25.6 & 4.10 & Too heavy for three parallel models on CPU \\
+        \effnet           & 5.3  & 0.39 & \textbf{Selected} --- best empirical accuracy on ACNE04 in our FLOP budget \\
+        ResNet-50         & 25.6 & 4.10 & Too heavy for three sequential models on CPU \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -2075,9 +2181,9 @@ three layers:
         model MUST predict `clear' at least once''}, and
         \emph{``the multi-label skin-conditions model MUST return an
         empty findings set at least once''}. Both of these tests
-        were red under the Phase-2 models and green under the
-        Phase-3 models. That flip is a large part of what we mean
-        when we say the Phase-3 rework was necessary.
+        were red under the initial Phase-3 models and green under
+        the final Phase-3 models. That flip is a large part of what
+        we mean when we say the Phase-3 rework was necessary.
     \item \textbf{Multi-label specific assertions.} Threshold
         checks, empty-set checks, and per-class calibration checks
         added when we moved to the sigmoid architecture.
@@ -2154,9 +2260,10 @@ side with the class structures they measure.
         Multi-label with independent sigmoid outputs; the metric
         rewards correctly saying ``present'' or ``absent'' on each
         of the two classes independently. The number matters less
-        than the qualitative change from the Phase-2 model: the
-        multi-label version can output the empty set on a clean
-        face, which the softmax model could not.
+        than the qualitative change from the initial Phase-3
+        softmax skin-issues model: the multi-label version can
+        output the empty set on a clean face, which the softmax
+        model could not.
 \end{itemize}
 
 \section{Real-world regression results}
@@ -2170,14 +2277,17 @@ before/after numbers on our small hand-labelled real-world set
 \begin{table}[htbp]
     \centering
     \caption{Real-world regression outcomes before and after the
-    Phase-3 rework. ``Population sanity'' rows are boolean:
-    either the model can produce the class at least once on the
-    folder or it cannot.}
+    Phase-3 rework. The ``before'' column is the state of the
+    initial Phase-3 models (softmax skin-issues, disconnected
+    preprocessing, ACNE04-only negatives); the ``after'' column is
+    the state of the final shipped models. ``Population sanity''
+    rows are boolean: either the model can produce the class at
+    least once on the folder or it cannot.}
     \label{tab:regression-results}
     \small
     \begin{tabularx}{\linewidth}{Xcc}
         \toprule
-        \textbf{Assertion} & \textbf{Phase 2} & \textbf{Phase 3 final} \\
+        \textbf{Assertion} & \textbf{Initial Phase 3} & \textbf{Final Phase 3} \\
         \midrule
         Per-image acne label correct (of 9 hand-labelled photos) & 3 / 9 & 7 / 9 \\
         False \texttt{severe} alarms (of 9)                      & 2 / 9 & 1 / 9 \\
@@ -2209,10 +2319,10 @@ set of patterns that recur across the hand-labelled folder:
         about.
     \item On a clean adult face the multi-label skin-conditions
         card produces the empty findings set. This is the
-        behaviour the Phase-2 model could not produce; it is
-        exercised as a hard assertion in the regression suite
-        (\Cref{sec:regression}) so that it does not silently
-        regress.
+        behaviour the initial Phase-3 softmax skin-issues model
+        could not produce; it is exercised as a hard assertion in
+        the regression suite (\Cref{sec:regression}) so that it
+        does not silently regress.
     \item On an under-exposed or blurry photograph the acne and
         skin-type cards typically fall below the confidence gate
         (0.30) and are replaced with the neutral ``low
@@ -2237,13 +2347,13 @@ test in \texttt{test\_real\_world\_regression.py} or
 \section{Latency and resource profile}
 
 Latency matters for a web application. Timing a typical
-\texttt{/api/analyze} request on our reference laptop CPU (warm
-cache, three models loaded once at startup), the total
-wall-clock lands in the region of roughly one to two seconds.
-Each \effnet forward pass dominates its part of the request; the
-three models today run sequentially, so the CNN cost is
-approximately three times a single forward pass. Everything else
-(image decoding, face detection, resize + ImageNet
+\texttt{/api/analyze} request on the machine we used for
+integration testing (warm cache, three models loaded once at
+startup), the total wall-clock lands in the region of roughly one
+to two seconds. Each \effnet forward pass dominates its part of
+the request; the three models today run sequentially, so the CNN
+cost is approximately three times a single forward pass.
+Everything else (image decoding, face detection, resize + ImageNet
 normalisation, BLP evaluation, report persistence) is small
 compared to the CNN cost.
 
@@ -2605,18 +2715,10 @@ regression tests for the BLP engine.
 \subsection{Real-world regression tests}
 The regression tests are the piece we describe in detail in
 \Cref{sec:regression}. They are the specific tests that were red
-after Phase-2 training and green after each Phase-3 fix. Anyone
-merging a change to the model layer is expected to run them and
-paste the pass/fail summary in the pull request.
-
-\section{Reproducibility}
-
-We fix random seeds for Python, NumPy, and \pytorch to \num{42}.
-We pin dependency versions in \texttt{requirements.txt}. We pin the
-CUDA-enabled variant of PyTorch separately in
-\texttt{model\_service/training/README.md} because different
-machines want different CUDA versions. On the same hardware, our
-headline metrics are reproducible to within a few thousandths.
+against the initial Phase-3 models and turned green one by one as
+each Phase-3 fix landed. Anyone merging a change to the model
+layer is expected to run them and paste the pass/fail summary in
+the pull request.
 
 \section{Debugging techniques we relied on}
 
@@ -2679,15 +2781,27 @@ is worth revisiting each of them with the evidence collected in
 the intervening chapters.
 
 \begin{description}
+    \item[Which backbone family generalises best on our data budget?]
+        On a fair Phase-2 bake-off with ImageNet-pretrained
+        initialisations on ACNE04, the ranking was clear: ResNet
+        \(\sim 55\,\%\), DenseNet \(\sim 62\,\%\), ViT
+        \(\sim 68\,\%\), \effnet \(73.1\,\%\). The most
+        credible explanation is not that \effnet is a smarter
+        architecture than a Vision Transformer, but that at our
+        dataset scale the strength of the pretrained weights
+        dominates: compound-scaled CNNs with a mature pretraining
+        recipe simply arrive at good features faster. On more data
+        or more compute the ranking might close, but on the
+        hardware we had \effnet was the correct pick.
     \item[Independent classifiers vs shared-backbone multi-task.]
         On our data budget the independent-classifier design won.
-        The shared backbone did not balance the three tasks well
-        even with tuned loss weights, and softmax confidence on
-        one head was hard to interpret because it depended on the
-        gradients pushed through by the other heads. Splitting
-        into three separate models cost us a small amount of
-        memory and latency, both comfortably inside the budget,
-        and gave us three cleanly interpretable predictions.
+        A shared backbone would have been pulled around by
+        whichever head had the loudest gradient at any moment,
+        making it very hard to attribute a real-world failure to
+        a specific sub-task. Splitting into three separate models
+        cost us a small amount of memory and latency, both
+        comfortably inside the budget, and gave us three cleanly
+        interpretable predictions.
     \item[Softmax vs sigmoid + BCE for skin conditions.] The
         reformulation was the single largest behavioural change
         in Phase 3. Under softmax the skin-issues model
@@ -2698,33 +2812,27 @@ the intervening chapters.
         regression tests flipped from red to green because of
         this change alone.
     \item[Do validation-split metrics predict shipped quality?]
-        No. The Phase-2 skin-issues model scored around 98\,\%
-        validation accuracy and could not predict \texttt{healthy}
-        on any real photograph. The Phase-3 skin-conditions
-        retrain \#1 scored a macro-\(F_1\) of \(0.996\) and
-        misfired \texttt{blackheads} on 7 of 11 real photographs.
-        In both cases the validation number was misleading in
-        the same way: the test split shared the training split's
-        photographic style, so the model was rewarded for
-        memorising style rather than feature. The regression
-        suite --- per-image plus population-level, on a distribution
-        matched to production --- is the only measure we now
-        trust before shipping.
+        No. Our initial Phase-3 skin-issues model scored around
+        98\,\% validation accuracy and could not predict
+        \texttt{healthy} on any real photograph. The follow-up
+        skin-conditions retrain \#1 scored a macro-\(F_1\) of
+        \(0.996\) and misfired \texttt{blackheads} on 7 of 11
+        real photographs. In both cases the validation number was
+        misleading in the same way: the test split shared the
+        training split's photographic style, so the model was
+        rewarded for memorising style rather than feature. The
+        regression suite --- per-image plus population-level, on
+        a distribution matched to production --- is the only
+        measure we now trust before shipping.
     \item[Cross-task data reuse.] Yes, within limits. Adding
         1{,}448 skin-type photographs as negatives for the
         skin-conditions model closed most of the domain gap
         without a fresh labelling effort. The visible cost was
-        \(0.015\) of training macro-\(F_1\); the visible gain was
-        the flip from 7 to 3 real-world failures out of 11 and
-        the two population-level tests turning green. The label
-        noise from mis-selected negatives is real but small.
-    \item[Rule engine vs learned recommender.] On our data budget
-        the rule engine dominated. A learned recommender needs
-        dermatologist-labelled recommendation ground truth, which
-        we did not have; it also breaks the traceability
-        property that the rule engine gives for free. The rule
-        engine costs us hand-authored rules; those rules take
-        hours, not weeks.
+        \(0.015\) of training macro-\(F_1\); the visible gain
+        was the flip from 7 to 3 real-world failures out of 11
+        and the two population-level tests turning green. The
+        label noise from mis-selected negatives is real but
+        small.
 \end{description}
 
 \section{What the Phase-3 rework actually cost}
@@ -2833,9 +2941,10 @@ The lessons we would carry into a next project:
 \end{itemize}
 
 \cara is not the largest or the most accurate skin analyser in the
-world. Within the constraints we set ourselves --- CPU-only inference,
-no dermatologist on the team, an insistence that every recommendation
-be traceable --- it is a system we are willing to stand behind.
+world. Within the constraints we set ourselves --- a modest compute
+budget, no dermatologist on the team, an insistence that every
+recommendation be traceable --- it is a system we are willing to
+stand behind.
 
 %==============================================================================
 \chapter{Future Work}\label{ch:future}
@@ -2870,10 +2979,10 @@ the truthfulness story.
 
 \section{On-device inference}
 
-Running three \effnet models on a CPU is fast enough on a laptop
-but not always fast enough on a low-end phone. Converting the
-models to ONNX and then to a mobile runtime (e.g.\ ONNX Runtime
-Mobile or Core ML) is a natural next step.
+Running three \effnet models sequentially is fast enough on a
+desktop or laptop but not always fast enough on a low-end phone.
+Converting the models to ONNX and then to a mobile runtime (e.g.\
+ONNX Runtime Mobile or Core ML) is a natural next step.
 
 \section{Larger regression set with diverse skin tones}
 
@@ -2919,6 +3028,16 @@ C.~Szegedy et al.
 K.~He, X.~Zhang, S.~Ren, and J.~Sun.
 \newblock ``Deep residual learning for image recognition''.
 \newblock In \emph{CVPR}, 2016.
+
+\bibitem{huang2017densely}
+G.~Huang, Z.~Liu, L.~van~der~Maaten, and K.~Q.~Weinberger.
+\newblock ``Densely connected convolutional networks''.
+\newblock In \emph{CVPR}, 2017.
+
+\bibitem{dosovitskiy2021vit}
+A.~Dosovitskiy et al.
+\newblock ``An image is worth 16x16 words: Transformers for image recognition at scale''.
+\newblock In \emph{ICLR}, 2021.
 
 \bibitem{xie2017aggregated}
 S.~Xie, R.~Girshick, P.~Doll\'ar, Z.~Tu, and K.~He.
@@ -3036,29 +3155,6 @@ class AnalysisReport(BaseModel):
     status: AnalysisStatus     # "success" | "low_confidence" | "no_face_detected"
 \end{lstlisting}
 
-\chapter{Reproducibility recipe}
-
-To reproduce our results:
-
-\begin{enumerate}
-    \item Clone the repository and check out the release tag used
-        for this report.
-    \item Install the dependencies pinned in
-        \texttt{requirements.txt}.
-    \item Populate the three dataset folders (\texttt{data/acne\_severity},
-        \texttt{data/skin\_type}, \texttt{data/skin\_conditions})
-        as described in \Cref{ch:data} and in each folder's own
-        \texttt{README.md}.
-    \item Run
-        \texttt{python -m model\_service.training.train --model all}.
-    \item Run \texttt{python -m pytest tests/ -v} to verify.
-\end{enumerate}
-
-Random seeds are fixed to \num{42} for Python, NumPy, and \pytorch.
-Results are reproducible up to CPU-specific floating-point
-non-determinism, which affects the third decimal of the reported
-metrics at worst.
-
 \chapter{Ingredient reference}
 
 The BLP engine draws from a curated vocabulary of skincare
@@ -3135,7 +3231,7 @@ source of truth is \texttt{backend/blp/rules.json}.
     \item[Transfer learning] Initialising a network with weights
         pretrained on a large dataset (ImageNet in our case) and
         fine-tuning it on the target task.
-    \item[Two-phase training] Our recipe: train the head with the
+    \item[Two-stage training] Our recipe: train the head with the
         backbone frozen, then unfreeze the upper backbone blocks
         with a lower learning rate.
     \item[Uncertain (report field)] The state in which the
