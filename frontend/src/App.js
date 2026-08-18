@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import AnalyzePage from './pages/AnalyzePage';
 import ResultsPage from './pages/ResultsPage';
@@ -8,6 +8,17 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import UserMenu from './components/UserMenu';
 import { clearAuthToken, clearUsername, getCurrentUsername, getStoredToken, saveAuthToken, saveUsername } from './auth';
+
+// Route guard: anything wrapped in this requires a logged-in user. Guests are
+// bounced to /login, and we remember where they were headed (`from`) so we can
+// send them straight back there after a successful login.
+function ProtectedRoute({ isLoggedIn, children }) {
+  const location = useLocation();
+  if (!isLoggedIn) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+  return children;
+}
 
 function App() {
   const [currentUser, setCurrentUser] = useState(() => getCurrentUsername());
@@ -66,9 +77,30 @@ function App() {
         <main className="main-content">
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/analyze" element={<AnalyzePage />} />
-            <Route path="/results/:reportId" element={<ResultsPage />} />
-            <Route path="/history" element={<HistoryPage />} />
+            <Route
+              path="/analyze"
+              element={
+                <ProtectedRoute isLoggedIn={isLoggedIn}>
+                  <AnalyzePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/results/:reportId"
+              element={
+                <ProtectedRoute isLoggedIn={isLoggedIn}>
+                  <ResultsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/history"
+              element={
+                <ProtectedRoute isLoggedIn={isLoggedIn}>
+                  <HistoryPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/login" element={<Login authValue={authValue} />} />
             <Route path="/register" element={<Register authValue={authValue} />} />
           </Routes>

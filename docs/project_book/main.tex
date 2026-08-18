@@ -1,0 +1,3246 @@
+%==============================================================================
+%  CARA --- Project Book (Defense-ready version)
+%  Final Degree Project, B.Sc. in Computer Science, Deep Learning Major
+%
+%  Compile with: pdfLaTeX  (Overleaf: Menu → Compiler → pdfLaTeX)
+%
+%  Figures are referenced by filename from the `figures/` folder next to
+%  this file. Real screenshots ship with the source; TikZ is only used
+%  for diagrams that describe architecture or data flow.
+%==============================================================================
+\documentclass[11pt,a4paper,oneside]{report}
+
+%------------------------------------------------------------------------------
+% Encoding, fonts, layout
+%------------------------------------------------------------------------------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{textcomp}
+
+\usepackage[a4paper,left=2.8cm,right=2.8cm,top=2.8cm,bottom=3cm]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{parskip}
+
+%------------------------------------------------------------------------------
+% Math
+%------------------------------------------------------------------------------
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{siunitx}
+\sisetup{detect-weight=true,detect-family=true}
+
+%------------------------------------------------------------------------------
+% Graphics
+% Note: all diagrams under figures/tikz/*.pdf are pre-rendered from the .tex
+% sources next to them, so main.tex does not load TikZ or pgfplots. This keeps
+% the Overleaf compile inside the free-plan timeout.
+%------------------------------------------------------------------------------
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage{xcolor}
+
+%------------------------------------------------------------------------------
+% Tables
+%------------------------------------------------------------------------------
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf,skip=6pt}
+\usepackage{subcaption}
+
+%------------------------------------------------------------------------------
+% Code listings
+%------------------------------------------------------------------------------
+\usepackage{listings}
+\definecolor{codebg}{RGB}{248,248,248}
+\definecolor{codekey}{RGB}{0,90,160}
+\definecolor{codestr}{RGB}{163,21,21}
+\definecolor{codecmt}{RGB}{80,120,80}
+\lstdefinestyle{cara}{
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{codekey}\bfseries,
+    stringstyle=\color{codestr},
+    commentstyle=\color{codecmt}\itshape,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    numbersep=8pt,
+    frame=single,
+    rulecolor=\color{gray!30},
+    breaklines=true,
+    breakatwhitespace=true,
+    showstringspaces=false,
+    tabsize=2,
+    captionpos=b,
+    xleftmargin=12pt,
+    framexleftmargin=8pt,
+}
+\lstset{style=cara}
+
+%------------------------------------------------------------------------------
+% Chapter / section styling
+%------------------------------------------------------------------------------
+\usepackage{titlesec}
+\definecolor{caraprimary}{RGB}{30,60,120}
+\definecolor{caraaccent}{RGB}{200,80,60}
+\titleformat{\chapter}[display]
+    {\normalfont\huge\bfseries\color{caraprimary}}
+    {\filleft\Large\textcolor{gray!70}{Chapter \thechapter}}
+    {0.6ex}
+    {\Huge}
+    [\vspace{-0.4ex}\rule{\linewidth}{0.6pt}]
+\titlespacing*{\chapter}{0pt}{-30pt}{22pt}
+
+\titleformat{\section}
+    {\normalfont\Large\bfseries\color{caraprimary}}{\thesection}{1em}{}
+\titleformat{\subsection}
+    {\normalfont\large\bfseries\color{caraprimary!85}}{\thesubsection}{1em}{}
+
+%------------------------------------------------------------------------------
+% Headers / footers
+%------------------------------------------------------------------------------
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[L]{\small\textsc{CARA --- Project Book}}
+\fancyhead[R]{\small\leftmark}
+\fancyfoot[C]{\thepage}
+\renewcommand{\chaptermark}[1]{\markboth{\thechapter.\ #1}{}}
+
+%------------------------------------------------------------------------------
+% Hyperlinks (load late)
+%------------------------------------------------------------------------------
+\usepackage[hidelinks,bookmarksnumbered,colorlinks=true,linkcolor=caraprimary,citecolor=caraaccent,urlcolor=caraprimary]{hyperref}
+\usepackage{cleveref}
+
+%------------------------------------------------------------------------------
+% Convenience macros
+%------------------------------------------------------------------------------
+\usepackage{xspace}
+\newcommand{\cara}{\textsc{Cara}\xspace}
+\newcommand{\effnet}{EfficientNet-B0\xspace}
+\newcommand{\pytorch}{PyTorch\xspace}
+
+\newtheorem{observation}{Observation}[chapter]
+
+%==============================================================================
+%  COVER PAGE
+%==============================================================================
+\begin{document}
+\pagenumbering{roman}
+
+\begin{titlepage}
+    \centering
+    \vspace*{0.5cm}
+    {\scshape\large \textcolor{caraprimary}{[UNIVERSITY / COLLEGE NAME]}\par}
+    {\scshape\normalsize [Faculty of Computer Science] \quad --- \quad [Deep Learning Major]\par}
+    \vspace{2.5cm}
+
+    \rule{\linewidth}{1.2pt}\vspace{0.4cm}
+    {\Huge\bfseries \textcolor{caraprimary}{CARA}\par}
+    \vspace{0.3cm}
+    {\LARGE\itshape Computer-Aided Review \& Analysis of Facial Skin\par}
+    \vspace{0.4cm}
+    {\large A Multi-Model Deep Learning System for Automated Skin Assessment\\ and Evidence-Based Skincare Recommendation\par}
+    \vspace{0.2cm}
+    \rule{\linewidth}{1.2pt}
+
+    \vspace{2.0cm}
+    {\large \textbf{Final Degree Project}\par}
+    {\normalsize B.Sc. in Computer Science --- Deep Learning Track\par}
+
+    \vfill
+    \begin{tabular}{rl}
+        \textbf{Submitted by:} & [Student Name 1] \\
+                               & [Student Name 2] \\
+                               & [Student Name 3] \\
+        \textbf{Supervisor:}   & [Prof.\ / Dr.\ Supervisor Name] \\
+        \textbf{Department:}   & [Department Name] \\
+        \textbf{Submission:}   & [Month, Year] \\
+    \end{tabular}
+
+    \vspace{1.2cm}
+    {\footnotesize \textit{CARA is not a medical diagnostic tool.
+    It provides cosmetic skincare insights and educational ingredient
+    recommendations only.}\par}
+\end{titlepage}
+
+%==============================================================================
+%  ABSTRACT
+%==============================================================================
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+Skincare decisions are today driven mostly by intuition, marketing, and
+influencers, while professional dermatological advice is expensive and
+often inaccessible. \cara is a web application that closes part of this
+gap by returning an honest, evidence-based assessment of a user's facial
+skin from a single photograph, together with concrete ingredient-level
+recommendations.
+
+The final system decomposes the assessment into three complementary
+classification tasks --- acne severity, skin type, and multi-label skin
+conditions (pores, blackheads) --- each handled by a dedicated \effnet
+convolutional neural network. The three predictions feed a
+deterministic, rule-based Business Logic Processing (BLP) engine that
+turns raw model outputs into actionable, explainable advice.
+
+This report tells the honest story of how the system reached that
+design. The project went through three distinct phases. \textbf{Phase 1
+was pure research}: no code, no models. We scoped the problem, surveyed
+competitors, mapped out what a truthful skin-analysis product would
+look like, and agreed early on that recommendations would be delivered
+through a deterministic rule engine rather than a learned recommender.
+We also identified a set of candidate public datasets we believed
+would be good enough to build the system on. \textbf{Phase 2 was the
+proof of concept}: each of the four team members implemented a
+different backbone architecture --- ResNet, DenseNet, Vision
+Transformer, and \effnet --- trained on the ACNE04 acne-severity
+dataset, in order to compare them head-to-head on a common benchmark
+before committing to one. \effnet won at \(73.1\,\%\) validation
+accuracy (against \(\sim 55\,\%\) for ResNet, \(\sim 62\,\%\) for
+DenseNet, and \(\sim 68\,\%\) for ViT) and became the backbone of the
+POC and, later, of every model we shipped. \textbf{Phase 3 was the
+largest phase and the source of everything in this repository}: we
+turned the single-model POC into the final multi-model application,
+adding a skin-type model and a skin-conditions model, and running each
+model against real user photographs for the first time. That is where
+almost every hard lesson surfaced. Real-world test images exposed
+catastrophic failures that a naive validation split had hidden: models
+were learning dataset signatures and photographic style rather than
+clinical features; a preprocessing pipeline that existed in code was
+silently disconnected in production; one of the ``healthy'' training
+folders turned out to be \emph{acne-level-zero} photographs with
+visible blemishes; and a softmax over five skin issues was
+mathematically incapable of saying ``none''. We responded by rebuilding
+the datasets from the ground up, reframing skin issues as a multi-label
+problem with proper negative anchors, enforcing training--inference
+preprocessing parity, and adapting the model to in-the-wild
+photographs by borrowing negatives from an orthogonal dataset.
+
+The final acne and skin-type classifiers reach 72.9\,\% and 70.9\,\%
+best validation accuracy on their respective test splits; the
+multi-label skin-conditions classifier reaches a macro-F1 of
+\textbf{0.981} after the domain-adaptation retrain. Beyond raw
+accuracy, our contribution is the emphasis on \emph{truthfulness}: the
+guarantee that when the system is uncertain, it says so, and that
+every recommendation shown to the user can be traced to a single,
+inspectable rule.
+
+\bigskip
+\noindent\textbf{Keywords:} deep learning, computer vision, convolutional
+neural networks, EfficientNet, transfer learning, image classification,
+multi-label classification, dermatology, skincare, rule-based systems,
+explainable AI, domain adaptation, FastAPI, React.
+
+\clearpage
+
+%==============================================================================
+%  ACKNOWLEDGEMENTS
+%==============================================================================
+\chapter*{Acknowledgements}
+\addcontentsline{toc}{chapter}{Acknowledgements}
+
+We thank our supervisor, [Supervisor Name], for the guidance, the
+patience, and the pointed feedback that pushed the project from a demo
+into a system we are willing to stand behind. We thank the members of
+the [Department Name] for the technical infrastructure and the open-door
+policy whenever we hit a wall. Finally, we thank our families and
+friends for tolerating months of conversations that revolved around
+loss curves, class weights, and skin types.
+
+\clearpage
+
+%==============================================================================
+%  TABLE OF CONTENTS
+%==============================================================================
+\tableofcontents
+\clearpage
+\listoffigures
+\addcontentsline{toc}{chapter}{List of Figures}
+\listoftables
+\addcontentsline{toc}{chapter}{List of Tables}
+\clearpage
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+%==============================================================================
+\chapter{Introduction and Motivation}\label{ch:intro}
+%==============================================================================
+
+\section{The problem we set out to solve}
+
+Skin is the largest organ in the human body, and yet the decisions
+people make about their skin are among the most poorly informed
+decisions in everyday life. Consumers spend billions each year on
+skincare products chosen almost entirely on the basis of marketing,
+celebrity endorsements, and viral trends. Dermatologists are expensive
+and overbooked; general practitioners rarely have time for cosmetic
+concerns; and the loudest voices online are often those with the
+least qualifications.
+
+The result is a market in which a person with mild acne might spend a
+year using a moisturiser designed for dry, ageing skin, while another
+person with sensitive combination skin scrubs their face with an
+abrasive salicylic-acid cleanser marketed for severe cystic acne.
+In both cases the person is not making a foolish choice; they simply
+lack access to a truthful, personal assessment of their own skin.
+
+\cara --- \emph{Computer-Aided Review \& Analysis} --- is our attempt to
+provide a small slice of that missing information. The goal is
+deliberately narrow: given a single facial photograph uploaded through
+a web browser, return within a few seconds an honest report describing
+the user's acne severity, skin type, and any notable skin conditions,
+together with a concrete list of ingredients to look for and
+ingredients to avoid.
+
+\section{Why this problem is a good fit for deep learning}
+
+Dermatological image classification has three properties that make
+it a natural target for supervised deep learning:
+
+\begin{enumerate}
+    \item \textbf{The signal is visual.} Almost everything a
+        dermatologist evaluates in a routine cosmetic consultation
+        is visible in a well-lit photograph: comedones, papules,
+        pustules, pore density, oily sheen, dry flakes,
+        hyperpigmentation. There is no need to reach for extra
+        modalities.
+    \item \textbf{The labels are weak and noisy.} Public datasets
+        come from different clinicians, different rating scales,
+        and different lighting conditions. This forces us to take
+        preprocessing, augmentation, and class imbalance
+        seriously, rather than treating them as afterthoughts.
+    \item \textbf{The sub-tasks are related but not identical.}
+        Oily skin is more prone to acne; blackheads tend to
+        cluster in areas with visibly enlarged pores. The
+        correlations are real, but so is the fact that the tasks
+        do not share a single label space. This creates a genuine
+        architectural question --- one big model or several small
+        ones? --- that we return to in \Cref{ch:algorithm}.
+\end{enumerate}
+
+\section{Non-negotiable design principles}\label{sec:principles}
+
+Very early in the project --- during Phase 1, before any code was
+written --- we agreed on three rules that would govern every technical
+decision. We refer back to them throughout the report.
+
+\begin{description}
+    \item[Truthfulness is the product.] A wrong prediction is worse
+        than no prediction. If the model is not confident, the system
+        must say so out loud rather than paper over the uncertainty.
+    \item[No manipulated results.] We never tune a threshold to make
+        an embarrassing prediction disappear. Numbers reported in this
+        book are the numbers we measured.
+    \item[Explainability comes from design, not post-hoc excuses.] The
+        rule engine that converts model predictions into recommendations
+        is deterministic and human-readable. A user (or a supervisor)
+        can trace exactly why a specific recommendation was made. This
+        commitment to a rule-based recommendation layer was made in
+        Phase 1 and was never revisited: a learned recommender was
+        never even a candidate.
+\end{description}
+
+These principles ruled out several attractive architectures:
+learned recommenders, ensemble score fusion, threshold calibration on
+the test set. They are also the reason the project took three phases
+rather than one to reach its current shape, as \Cref{ch:data,ch:algorithm}
+describe in full.
+
+\section{Research questions}
+
+Behind the product sits a small set of empirical questions we cared
+about answering. The rest of the book returns to each of them with
+evidence:
+
+\begin{itemize}
+    \item On our data budget (thousands, not millions, of images),
+        which family of backbones actually generalises best ---
+        classical CNNs (ResNet), densely-connected CNNs (DenseNet),
+        transformer-based models (ViT), or compound-scaled CNNs
+        (\effnet)? Does the answer come from the architecture itself
+        or from the strength of its pretrained weights?
+    \item Is it better to build one large multi-task model that
+        predicts every skin aspect from a shared backbone, or to run
+        several small, task-specific models in parallel? Which is
+        easier to debug when something goes wrong?
+    \item When the physical problem admits ``multiple'' or ``none''
+        as legitimate answers, how much does moving from softmax to
+        sigmoid + BCE actually change the model's behaviour on real
+        inputs?
+    \item Can validation-split metrics be trusted as a proxy for
+        shipped quality on skin datasets, or do they systematically
+        mislead? What kind of test suite would have caught the bug
+        we did not catch?
+    \item Can cross-task data reuse --- treating one dataset's
+        images as negatives for another task --- close a
+        distribution gap that would otherwise require a fresh
+        labelling effort?
+\end{itemize}
+
+Each question was answered by an experiment or by a diagnosed
+failure, not by intuition.
+
+\section{Contributions}
+
+The concrete contributions of this project are:
+
+\begin{itemize}
+    \item A production-grade, end-to-end web application that runs
+        three deep-learning models sequentially on a single shared
+        input and returns a report within a couple of seconds on
+        commodity hardware.
+    \item A head-to-head comparison of four genuinely different
+        backbone families (ResNet, DenseNet, Vision Transformer, and
+        \effnet) on the same acne-severity benchmark, with an honest
+        explanation of why \effnet won on our data budget.
+    \item A multi-model architecture in which each skin sub-task is
+        handled by its own dedicated \effnet classifier, feeding a
+        deterministic rule-based recommendation engine that we
+        committed to from the very first day of the project.
+    \item A multi-label refactor of the skin-conditions problem, with
+        cross-task negative-anchor mining, that raised out-of-domain
+        precision without a fresh labelling effort.
+    \item A three-layer regression test suite --- per-image assertions,
+        population-level sanity checks, and multi-label specific
+        assertions --- that catches the class of bug that ordinary
+        train/val/test evaluation is structurally blind to.
+    \item An honest, defensible narrative of every experiment we ran,
+        including the ones that failed and why they failed.
+\end{itemize}
+
+\section{Reading guide}
+
+The book is organised so that a reader can either follow it end-to-end
+or enter at whichever chapter interests them.
+\Cref{ch:background} surveys the academic and industrial landscape.
+\Cref{ch:academic} covers the deep-learning background needed to follow
+the technical chapters.
+\Cref{ch:data} describes the datasets, how we cleaned them, and how
+they evolved across the three phases.
+\Cref{ch:algorithm} is the main technical chapter, walking through
+the architecture, the Phase-2 bake-off of four different backbone
+families, and the Phase-3 rework in detail.
+\Cref{ch:experiments,ch:results} report experiments and final results.
+\Cref{ch:product} describes the product from a user's point of view,
+with screenshots.
+\Cref{ch:engineering} covers the software engineering and testing
+practice around the models.
+\Cref{ch:discussion,ch:conclusions,ch:future} close the book with
+discussion, conclusions, and directions for future work.
+
+%==============================================================================
+\chapter{Background and Related Work}\label{ch:background}
+%==============================================================================
+
+\section{The clinical baseline}
+
+Modern dermatology grades acne along ordinal scales such as the
+Investigator's Global Assessment (IGA) or the Global Acne Grading
+System (GAGS). Both scales collapse a rich visual scene into a small
+number of categories (typically \emph{clear}, \emph{mild},
+\emph{moderate}, \emph{severe}). Skin type is described using variants
+of the classical four-way split \emph{oily}, \emph{dry}, \emph{normal},
+\emph{combination}. Secondary conditions --- blackheads, dark spots,
+enlarged pores, wrinkles --- are usually discussed qualitatively
+rather than graded on a formal scale.
+
+This clinical vocabulary matters because it defines the labels our
+models must produce. Inventing new categories would make it impossible
+for a domain expert to validate the output. We therefore aligned our
+label spaces with the categories a dermatologist would recognise.
+
+\section{Public datasets we evaluated}
+
+Progress in dermatological deep learning has been paced by dataset
+releases. The most influential public resources we considered:
+
+\begin{itemize}
+    \item \textbf{ACNE04}~\cite{wu2019acne04}. Roughly 1{,}400 facial
+        images labelled with acne severity plus per-lesion bounding
+        boxes. The original paper formulates the task as label
+        distribution learning; the class labels can also be used
+        directly. Photographs are in-the-wild and vary widely in
+        lighting and pose, which is both a curse and a blessing: they
+        are noisy but they resemble real user uploads. \emph{Our
+        anchor dataset for acne severity.}
+    \item \textbf{Kaggle Face Skin Type / Skin Problems datasets}. A
+        family of smaller, community-contributed datasets covering
+        skin type and skin problem categories. Quality varies but
+        they fill gaps left by the more curated academic datasets.
+    \item \textbf{ISIC / HAM10000}~\cite{tschandl2018ham10000}. A
+        large collection of dermoscopic images labelled with
+        skin-lesion categories. Excellent for melanoma / lesion
+        classification but not directly applicable to cosmetic
+        assessment because the images are dermoscopic close-ups
+        rather than casual photographs.
+    \item \textbf{Fitzpatrick 17k}~\cite{groh2021fitzpatrick}. A
+        dataset of clinical photographs annotated with Fitzpatrick
+        skin type, used mostly for fairness studies. Referenced but
+        not used for training.
+    \item \textbf{Roboflow object-detection sets for acne and skin
+        conditions.} Detection-annotated sets with bounding boxes
+        around lesions or comedones. These looked useful in Phase 1
+        but caused us serious problems in Phase 3, as
+        \Cref{ch:data} details.
+\end{itemize}
+
+\section{Related academic work}
+
+Four bodies of prior work directly shaped \cara. We name each one
+briefly, then say what we actually took from it.
+
+\subsection{Lesion classification on dermoscopic images}
+Esteva et al.~\cite{esteva2017dermatologist} showed that a single
+CNN, trained on enough clinical images, could match dermatologists
+on binary melanoma classification. That paper is the reason we felt
+confident that off-the-shelf CNN backbones would carry visual
+dermatology signals well enough for a cosmetic (non-diagnostic)
+application. It is also where our defensive stance on labelling
+comes from: their pipeline succeeds because the labels are
+clean, and the same lesson applies in reverse whenever we discover
+that our labels are not.
+
+\subsection{Acne severity grading}
+The ACNE04 paper~\cite{wu2019acne04} is both our anchor dataset and
+a design reference. Its authors frame acne grading as label-distribution
+learning, arguing that categorical labels lose information because
+adjacent severity buckets differ only marginally. We deliberately
+chose the simpler categorical formulation despite this argument: our
+downstream consumer is a rule engine that dispatches on discrete
+severity buckets, and any smoother score would just be re-bucketed
+before it reached the user.
+
+\subsection{Skin-type and cosmetic assessment}
+Skin-type classification is under-served in the academic literature;
+most published pipelines come from industry rather than academia.
+We could not find a widely-cited benchmark for the four-class
+oily / dry / normal / combination task, which is why our skin-type
+numbers are harder to compare to external work than our acne numbers.
+This gap in the literature is one reason the Kaggle community dataset
+we ended up using is the best available option rather than an
+uncontroversial one.
+
+\subsection{Multi-label medical image classification}
+The Phase-3 skin-conditions refactor from softmax to sigmoid + BCE
+is not something we invented: it is standard practice in multi-label
+medical imaging, most famously in chest-X-ray
+classification~\cite{rajpurkar2017chexnet}. Independent sigmoid heads,
+binary cross-entropy with per-class positive weights, and per-class
+\(F_1\) reporting all transferred cleanly to our setting; the credit
+belongs to that line of work.
+
+\section{Commercial and industrial products}
+
+Several commercial products have appeared in the last few years that
+occupy roughly the same niche as \cara. Each one influenced our design
+either by example or by counter-example.
+
+\begin{itemize}
+    \item \textbf{L'Or\'eal Skin Genius / ModiFace.} A polished mobile
+        experience that returns a numerical score and product
+        recommendations. The recommendations are, unsurprisingly,
+        drawn exclusively from the vendor's own catalogue. This
+        motivated our decision to recommend \emph{ingredients} rather
+        than branded products.
+    \item \textbf{Perfect Corp.\ / YouCam Makeup.} Very strong face
+        tracking and augmented-reality effects. Their skin-quality
+        assessment is fast but has been criticised for optimistic
+        outputs that appear to be tuned for engagement rather than
+        accuracy. This informed our stance on truthfulness.
+    \item \textbf{Curology.} A subscription tele-dermatology service
+        in which real clinicians write prescriptions after reviewing
+        user photographs. Not an AI product per se, but the reference
+        for what a truthful assessment looks like.
+    \item \textbf{Academic demos.} A number of open-source projects
+        on GitHub attempt facial skin analysis with pretrained CNNs.
+        Almost all of them fall into one of two failure modes: they
+        return a confident label on every input, including images
+        with no face; or they degrade to noise as soon as lighting
+        changes. Both failures shaped the guardrails in our pipeline.
+\end{itemize}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Positioning of \cara relative to representative existing products.}
+    \label{tab:positioning}
+    \small
+    \begin{tabularx}{\linewidth}{lXXXX}
+        \toprule
+        & \textbf{L'Or\'eal SG} & \textbf{Perfect Corp.} & \textbf{Curology} & \textbf{\cara} \\
+        \midrule
+        Delivery         & Mobile app       & Mobile app     & Human tele-derm  & Web app \\
+        Assessment       & Learned score    & Learned score  & Human            & 3 CNNs + rules \\
+        Recommends       & Own products     & Own products   & Prescription     & Ingredients \\
+        Explainability   & None             & None           & Full             & Rule engine \\
+        Handles unsure   & Rarely           & Rarely         & Always           & By design \\
+        Open source      & No               & No             & No               & Yes \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\section{Where \cara fits in the picture}
+
+\cara sits deliberately in the small corner of the market that
+combines (i) open-source, reproducible, deep-learning components,
+with (ii) a transparent, rule-based recommendation layer, and (iii)
+an honest policy about uncertainty. We do not compete with L'Or\'eal
+on polish, and we do not compete with Curology on medical rigour. We
+compete with the countless \emph{``free online skin analysis''} demos
+on the accuracy and honesty of the report they return.
+
+%==============================================================================
+\chapter{Academic Background}\label{ch:academic}
+%==============================================================================
+
+This chapter is a short refresher on the deep-learning ideas that
+the rest of the book rests on, framed each time in the way they
+actually show up in \cara rather than as a generic tutorial.
+
+\section{Image classification}
+
+At its heart, image classification is a mapping from an image to
+one of a few predefined categories. In \cara those categories are
+\emph{clear / mild / moderate / severe} acne, \emph{oily / dry /
+normal / combination} skin, or the presence of individual skin
+conditions such as pores and blackheads. Single-label heads
+(``pick exactly one'') use a softmax so that the class
+probabilities sum to one. Multi-label heads (``pick any subset,
+possibly empty''), which we return to in
+\Cref{sec:multilabel-formal}, use independent sigmoids instead.
+
+\section{Multi-label classification}\label{sec:multilabel-formal}
+
+Two of the three tasks in \cara are single-label (acne severity and
+skin type: the categories are mutually exclusive by definition). The
+third --- skin conditions --- is multi-label: a face can have
+blackheads AND enlarged pores simultaneously, or neither. A softmax
+over five categories, as we discovered in Phase 3, is mathematically
+incapable of representing ``neither'': softmax outputs sum to one,
+so \emph{something} always has to fire. Replacing the softmax with
+independent sigmoids (and training with binary cross-entropy) turns
+each class into its own yes / no decision, and the empty set ---
+``no notable conditions'' --- becomes a legal output. This is
+exactly why we adopted the multi-label formulation for the
+skin-conditions model.
+
+\section{Convolutional neural networks}
+
+Convolutional neural networks (CNNs)~\cite{lecun1998gradient} are
+the workhorse of computer vision because they combine two useful
+properties: they recognise a feature regardless of where in the
+image it appears, and each layer looks only at nearby pixels.
+Stacking convolutions builds a hierarchy of features, from edges
+and textures in the shallow layers to whole objects near the top.
+This progression matches what acne grading actually needs: local
+texture (pimples) plus global layout (how many, how spread out).
+
+\section{Why we chose \effnet}
+
+\effnet~\cite{tan2019efficientnet} is a compact CNN backbone that
+scales depth, width, and input resolution together against a fixed
+compute budget. We use \effnet-B0, the smallest family member,
+because its ImageNet-pretrained weights are strong per parameter
+and its footprint keeps three sequential inferences comfortably
+within the response-time budget of a web request. The choice was
+validated empirically in the Phase-2 bake-off (\Cref{sec:phase2-arch}),
+where \effnet beat ResNet, DenseNet, and a Vision Transformer on
+ACNE04. Our fine-tuned model has about \num{4.01}~million parameters
+(the head is a dropout layer plus a single linear layer, sized 2
+or 4 depending on the task) and roughly \num{0.39}~GFLOPs per
+forward pass at \(224 \times 224\).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\linewidth]{tikz/effnet-block.pdf}
+    \caption{Schematic of the \effnet backbone used for each of
+    \cara's three classifiers. The classifier head (dropout +
+    fully-connected + softmax or sigmoid) is the only part
+    re-initialised for each task.}
+    \label{fig:effnet-block}
+\end{figure}
+
+\section{Transfer learning}
+
+Training a modern CNN from random weights on a few thousand images
+overfits almost immediately. Transfer
+learning~\cite{yosinski2014transferable} works around this by
+starting from weights that were already trained on a much larger
+dataset --- ImageNet~\cite{deng2009imagenet} in our case --- and
+then adapting them to the target task. In practice this is what
+lets us fine-tune three different skin classifiers on datasets that
+each contain only a few thousand labelled examples. Our two-stage
+recipe (\Cref{sec:two-phase}) --- head-only warm-up followed by
+partial unfreeze of the upper backbone blocks --- was adopted in
+Phase 2 and carried into Phase 3 unchanged.
+
+\section{Regularisation and augmentation}
+
+Small datasets punish confident networks. We rely on three
+regularisers:
+
+\begin{enumerate}
+    \item \textbf{Data augmentation.} Random resized crop, horizontal
+        flips, mild rotations, colour jitter. All augmentations are
+        applied to training data only, never to validation or test
+        data.
+    \item \textbf{Dropout} (\(p=0.3\)) in the classifier head.
+    \item \textbf{Weight decay} via AdamW~\cite{loshchilov2019adamw}.
+\end{enumerate}
+
+\section{Class imbalance}\label{sec:imbalance}
+
+Real-world skin datasets are heavily skewed. In our final acne
+dataset the \emph{severe} class contains roughly one seventh as many
+samples as \emph{mild}. Naive training would produce a classifier
+that predicts \emph{mild} everywhere and reports respectable
+accuracy.
+
+For single-label tasks we use weighted cross-entropy with weights
+derived from sklearn's balanced weighting rule:
+
+\begin{equation}
+    w_k = \frac{N}{K \cdot n_k}
+    \label{eq:weights}
+\end{equation}
+
+where \(N\) is the total number of training samples, \(K\) the number
+of classes, and \(n_k\) the number of samples in class \(k\). The
+intuition is simple: a class with few samples gets a large weight so
+that each of its examples counts for more in the loss, and a class
+with many samples gets a small weight so that it does not dominate.
+Multiplying the standard cross-entropy loss by \(w_k\) whenever the
+true class is \(k\) is enough to bring rare classes back into the
+gradient. The weights we actually used are listed in \Cref{ch:data}.
+
+For multi-label tasks (\Cref{sec:multilabel-formal}) we use a
+per-class positive weight inside BCE, computed as the ratio of
+negative to positive samples for that class, clipped to
+\([0.1, 10]\) to keep the loss numerically stable.
+
+\section{Optimisation}
+
+We use AdamW with an initial learning rate of \(10^{-3}\) for the
+classifier head and \(10^{-4}\) for the unfrozen backbone. Learning
+rate scheduling is cosine annealing with a short linear warm-up.
+Early stopping is triggered by validation loss (or, for the
+multi-label model, validation macro-\(F_1\)), not by training loss.
+
+\section{Rule-based systems and BLP}
+
+Business Logic Processing (BLP) is our internal name for the
+deterministic rule engine that converts model outputs into
+user-facing advice. It is closer in spirit to a decision table than
+to a formal rule system such as Datalog: every recommendation is
+produced by evaluating a hand-written rule against the model's
+structured prediction, and any recommendation shown to the user can
+be traced to a single entry in a JSON file. This was a Phase-1
+commitment that never wavered. \Cref{sec:blp-engine} describes the
+engine we ultimately built.
+
+\section{Metrics beyond accuracy}\label{sec:metrics}
+
+We report accuracy for single-label tasks and macro-\(F_1\) for the
+multi-label task because those are the metrics a non-expert reader
+expects. Internally we track:
+
+\begin{itemize}
+    \item \textbf{Macro-averaged \(F_1\).} The unweighted mean of the
+        per-class \(F_1\) scores. Insensitive to class imbalance.
+    \item \textbf{Balanced accuracy.} The unweighted mean of
+        per-class recall. Comparable to accuracy on balanced data
+        but more honest on imbalanced data.
+    \item \textbf{Confusion matrix.} The full per-class breakdown.
+        Any conversation about where a model is failing starts here.
+    \item \textbf{Real-world regression pass rate.} The percentage of
+        our hand-labelled in-the-wild photographs on which the model
+        predicts correctly. This turned out to be a much better
+        proxy for shipped quality than any validation-split number.
+\end{itemize}
+
+The final bullet is a lesson from Phase 3: no matter how carefully
+constructed, a validation split of a training set only proves that
+the model can memorise its own distribution. \Cref{sec:regression}
+describes the regression suite we built to measure the real thing.
+
+%==============================================================================
+\chapter{The Data}\label{ch:data}
+%==============================================================================
+
+Data is the single largest determinant of model quality in this
+project, and by a wide margin. This chapter documents where the data
+came from, what we discovered when we looked closely, and how the
+datasets evolved across the three phases. The evolution is important
+because the \emph{same} model trained on the \emph{same} architecture
+gave completely different real-world behaviour before and after each
+data intervention.
+
+\section{Phase 1: mapping the data landscape (no code yet)}
+
+Phase 1 was a research phase. We did not train, evaluate, or even
+implement anything during Phase 1. What we did do was decide which
+skin aspects the product would cover and go looking for public
+datasets that we \emph{believed} could support each of them. Our
+initial plan was ambitious: five separate models, one for each of
+acne severity, skin type, blackheads, pores, and dark spots. For
+each aspect we shortlisted the best-looking candidate we could find
+in the free / open-source world. On paper the shortlist looked
+reasonable. We also settled, during Phase 1, on two decisions that
+never changed later:
+
+\begin{itemize}
+    \item Recommendations would be produced by a deterministic
+        rule engine (BLP), not by a learned recommender. This was
+        a Phase-1 commitment that we never revisited.
+    \item We leaned toward the idea that each skin aspect would
+        eventually be handled by its own dedicated model, rather
+        than by one large multi-task network. The reasoning was
+        simple: if a single monolithic model misbehaves on a real
+        user photograph, it is very hard to say which sub-problem
+        is at fault. But since Phase 1 was research-only and no
+        model had actually been trained yet, this remained an
+        \emph{open question} rather than a committed decision;
+        we knew we would have to answer it for real once we
+        started scaling up. The final decision was made in
+        Phase 3 (\Cref{sec:phase3-scale-up}).
+\end{itemize}
+
+The important caveat is that in Phase 1 the datasets were only
+\emph{candidates on disk}. We had not yet trained a single model on
+them and therefore had no way to see the quality problems that
+would later surface in Phase 3. Phase 1 ended with a plan, a
+recommendation strategy, a shortlist of datasets, and no code.
+
+\section{Phase 2: implementing a POC on ACNE04 only}
+
+Phase 2 was the proof of concept. We deliberately did \emph{not}
+attempt to build all the models at once. Instead, we picked one
+dataset --- the acne-severity dataset ACNE04~\cite{wu2019acne04} ---
+and used it as a common benchmark to decide which backbone
+architecture our whole system would be built on
+(\Cref{sec:phase2-arch}). ACNE04 was the right choice for that job:
+it is the cleanest and best-documented of the datasets we had
+shortlisted, has four ordinal severity classes, and its
+in-the-wild photographs resemble the kind of image a real user
+would upload.
+
+Because Phase 2 only touched ACNE04, none of the dataset-quality
+problems described later in this chapter were visible yet. Phase 2
+ended with a working end-to-end POC: an image upload flow, an
+\effnet acne-severity classifier, a first version of the BLP rule
+engine covering the acne branch, and a simple report page. It
+proved that the shape of the product was viable; it did not yet
+prove that our other candidate datasets would hold up.
+
+\section{Phase 3: expanding to multiple datasets, and everything that broke}
+
+Phase 3 turned the POC into the final product. That meant taking
+the working \effnet backbone and instantiating it three times ---
+once for acne severity, once for skin type, once for the group of
+secondary skin issues --- each with its own dataset, its own
+training run, and its own head. This is also the phase where the
+codebase in front of you was actually written; almost none of the
+Phase-2 code survives verbatim into the current repository.
+
+The moment we started training the second and third models on the
+non-ACNE04 datasets that Phase 1 had shortlisted, cracks appeared.
+Some were in the data itself, some in the preprocessing pipeline,
+some in the loss function. \Cref{ch:algorithm} covers the pipeline
+and loss fixes; the rest of this chapter documents what we found
+when we looked at the training folders themselves.
+
+Two Phase-1 dataset choices, in particular, turned out to be
+catastrophic once real-world testing began:
+
+\begin{enumerate}
+    \item An early candidate for the acne task was an
+        \textbf{object-detection} dataset --- photographs annotated
+        with bounding boxes around individual pimples. The idea was
+        to run an object detector, count boxes, and derive severity
+        from the count. In practice this would have meant almost no
+        ``clear'' examples (nobody annotates healthy faces with zero
+        boxes), and the signal any eventual classifier would learn
+        would have been ``how much stuff got detected'', not ``what
+        is the clinical severity''. We dropped this idea in Phase 3
+        in favour of using ACNE04 as a pure classification dataset
+        (labels only, bounding boxes discarded).
+    \item The ``healthy'' folder inside the initial multi-issue skin
+        dataset consisted of images with the filename prefix
+        \texttt{levle0\_*.jpg} --- level-0 acne from a different
+        dataset. Level 0 is \emph{not} the same as clean skin.
+        Those photographs actually contain visible pimples and
+        blackheads, just less severely. Trained as a ``healthy''
+        class it taught the model exactly the wrong concept. This
+        was invisible in Phase 1 (we never trained on it) and would
+        have been invisible in Phase 2 as well (we only touched
+        ACNE04). It surfaced the moment we ran the newly trained
+        skin-issues model on a real user selfie in Phase 3.
+\end{enumerate}
+
+The lesson from these two examples is one we return to throughout
+the book: a validation-split accuracy number computed on the same
+folder the model was trained on cannot detect a mislabelled folder.
+The model happily memorises whatever labels it is given. Only real
+photographs from outside the training distribution can expose the
+gap.
+
+\section{The Phase-3 dataset audit}
+
+Phase 3 began in earnest with a single failing photograph: a
+well-lit adult selfie of a clean face that came back as \emph{severe
+acne, oily skin, wrinkles detected}. Every part of that answer was
+wrong. Chasing the cause down took us through the data, the
+preprocessing pipeline, and the loss functions. The pipeline and
+loss fixes are covered in \Cref{ch:algorithm}; this section covers
+what we found when we looked at the training folders themselves.
+
+\subsection{The ``healthy'' folder was not healthy}
+
+The initial multi-issue skin-issues dataset that we picked up in
+Phase 3 (from the Phase-1 shortlist) contained a \texttt{healthy/}
+subfolder whose files were named \texttt{levle0\_*.jpg}. Those
+images had originally been drawn from an external acne-severity
+level-0 collection. Level 0 is the lowest acne grade, but it is
+not the absence of blemishes: inspection showed visible pimples,
+blackheads, and mild dark spots in most of the files. Trained on
+this folder as an example of ``healthy'' skin, the model learned
+the wrong concept and never predicted \texttt{healthy} on real
+clean-skin selfies. Our regression suite later caught this
+as \(0/9\) real photos classified as healthy, which matched the
+diagnosis exactly.
+
+\subsection{The ``wrinkles'' folder was elderly stock photography}
+
+The \texttt{wrinkles/} folder in the same initial multi-issue
+dataset came from a Roboflow crop of stock photographs of elderly
+faces. The images share a very specific photographic style: studio
+lighting, posed smile, older subjects, high-quality DSLR. What the
+classifier learned was ``photograph of an older-looking person'',
+not ``fine lines on skin'', and it accordingly fired
+\texttt{wrinkles} on any mid-adult selfie.
+
+Both folder problems share the same underlying failure: the class
+label describes a superficial property of the image rather than
+the feature the label claims to identify. Neither was visible
+under train-split evaluation because the train and validation
+splits share the same photographic style; both were visible the
+moment a real user upload arrived. This is one of the reasons the
+initial Phase-3 skin-issues model performed so much worse on real
+photographs than its validation number suggested, and it is why
+we now insist on spot-checking every folder before it is accepted
+into training.
+
+\subsection{Softmax cannot say ``none''}
+
+Even if the two folder issues had been fixed in place, the
+skin-issues model would still have insisted on picking exactly one
+of \{healthy, blackheads, dark spots, pores, wrinkles\} for every
+input. Real skin does not work like that. A face can have
+blackheads and pores simultaneously, or neither. Under a softmax
+head the probabilities sum to one, and there is no output that
+means ``none of the above''; the model is mathematically forced
+to pick a class. The architectural response is described in
+\Cref{sec:multi-label-refactor}.
+
+\section{Phase 3: the final dataset layout}
+
+Once the audit was complete we settled on the datasets summarised in
+\Cref{tab:final-datasets}. The \texttt{skin\_issues} folder is
+preserved on disk with a README that documents its deprecation, but
+it is no longer used by training or by the runtime.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Final training datasets used by \cara.
+    Splits are 70 / 15 / 15 (train / val / test) for the datasets we
+    split ourselves; \texttt{skin\_type} came pre-split by the
+    original authors.}
+    \label{tab:final-datasets}
+    \small
+    \begin{tabularx}{\linewidth}{lXXX}
+        \toprule
+        & \textbf{Source} & \textbf{Classes} & \textbf{Total images} \\
+        \midrule
+        Acne severity     & ACNE04 (classification labels) & 4 (clear, mild, moderate, severe) & 1{,}377 \\
+        Skin type         & Kaggle community dataset       & 4 (oily, dry, normal, combination) & 4{,}093 \\
+        Skin conditions   & Composite (see below)          & 2 output classes, multi-label      & 5{,}533 \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\subsection{Acne severity split and weights}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Class distribution and derived per-class weights for
+    the acne severity training set. Weights follow the balanced
+    scheme in \Cref{eq:weights}, and match the numbers used by our
+    training script.}
+    \label{tab:acne-weights}
+    \small
+    \begin{tabular}{lrrr}
+        \toprule
+        \textbf{Class} & \textbf{Count} & \textbf{Frequency} & \textbf{Weight \(w_k\)} \\
+        \midrule
+        clear    & 338 & 35.1\% & 0.712 \\
+        mild     & 436 & 45.3\% & 0.552 \\
+        moderate & 122 & 12.7\% & 1.973 \\
+        severe   &  67 &  7.0\% & 3.593 \\
+        \midrule
+        \textbf{Total} & 963 & 100.0\% & --- \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Split sizes for the acne severity task.}
+    \label{tab:splits-acne}
+    \small
+    \begin{tabular}{lrrrr}
+        \toprule
+        & \textbf{Total} & \textbf{Train} & \textbf{Val} & \textbf{Test} \\
+        \midrule
+        Images & 1\,377 & 963 & 207 & 207 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Skin-type split and weights}
+
+The skin-type Kaggle dataset came pre-split into train / valid /
+test folders. \Cref{tab:skin-type-splits} shows the actual counts;
+\Cref{tab:skin-type-weights} shows the derived per-class weights.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Split sizes for skin type.}
+    \label{tab:skin-type-splits}
+    \small
+    \begin{tabular}{lrrrr}
+        \toprule
+        & \textbf{Total} & \textbf{Train} & \textbf{Val} & \textbf{Test} \\
+        \midrule
+        Images & 4\,093 & 2\,872 & 812 & 409 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Class distribution and derived per-class weights for skin type.}
+    \label{tab:skin-type-weights}
+    \small
+    \begin{tabular}{lrr}
+        \toprule
+        \textbf{Class} & \textbf{Train count} & \textbf{Weight \(w_k\)} \\
+        \midrule
+        combination & 248 & 2.895 \\
+        dry         & 834 & 0.862 \\
+        normal      & 976 & 0.736 \\
+        oily        & 814 & 0.881 \\
+        \midrule
+        \textbf{Total} & 2\,872 & --- \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Skin-conditions dataset (multi-label)}\label{sec:conditions-dataset}
+
+The Phase-3 skin-conditions dataset was built from three sources
+combined into three folders. Only two positive classes survive from
+the old five: pores and blackheads. The other three were dropped for
+the reasons documented in \Cref{ch:data} above and re-summarised in
+\Cref{tab:dropped-classes}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Classes dropped from the initial multi-issue skin-issues
+    dataset (the Phase-1 shortlist candidate, first trained on in
+    Phase 3), with reasons.}
+    \label{tab:dropped-classes}
+    \small
+    \begin{tabularx}{\linewidth}{lXl}
+        \toprule
+        \textbf{Class} & \textbf{Reason dropped} & \textbf{Data fate} \\
+        \midrule
+        healthy    & Mislabelled: images were level-0 acne, not clean skin. Also, ``healthy'' is implicit under multi-label if no positive fires. & Preserved on disk, unused. \\
+        wrinkles   & Data was stock photos of elderly people; model learnt photographic style rather than the feature. Not clinically useful for the target audience. & Preserved on disk, unused. \\
+        dark spots & Signal overlaps with acne severity. Kept off the current model; may return later. & Preserved on disk, unused. \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+The negative folder is the key idea. Multi-label training needs
+negative examples --- images where neither pores nor blackheads are
+present --- otherwise the model just learns to discriminate between
+pores and blackheads and pushes clean faces into whichever bucket is
+statistically closer.
+
+The first Phase-3 retrain used the 483 curated clean-skin faces from
+\texttt{data/acne\_severity/clear/} as the negative folder. That
+gave a very high training-set macro-\(F_1\) of 0.996 but exposed a
+new bias: the model fired \texttt{blackheads=1.00} on almost every
+stock internet photograph while correctly saying ``no notable
+conditions'' on iPhone selfies. The problem was that the negatives
+shared one very specific photographic style (clinical ACNE04
+portraits) while the positives (pores, blackheads) were arbitrary
+Roboflow internet crops. The model was learning \emph{style}, not
+\emph{condition}. The next chapter (\Cref{sec:domain-adaptation})
+describes the retrain that fixed this.
+
+The final negatives folder mixes two sources:
+
+\begin{table}[htbp]
+    \centering
+    \caption{Composition of \texttt{data/skin\_conditions/} (Phase-3
+    retrain \#2). ``skintype\_'' files are prefixed on disk so each
+    is traceable to its source class.}
+    \label{tab:conditions-dataset}
+    \small
+    \begin{tabularx}{\linewidth}{lrX}
+        \toprule
+        \textbf{Folder} & \textbf{Count} & \textbf{Composition} \\
+        \midrule
+        pores       & 1\,632 & Roboflow crops labelled ``pores'' \\
+        blackheads  & 1\,970 & Roboflow crops labelled ``blackheads'' \\
+        negative    & 1\,931 & 483 from \texttt{acne\_severity/clear/} (ACNE04
+                                clean-skin portraits) + 1{,}448 from
+                                \texttt{skin\_type/train/} (500 normal,
+                                500 dry, 248 combination, 200 oily) \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+The auxiliary skin-type negatives are quota-sampled with a bias
+toward classes least likely to correlate visually with pores or
+blackheads (heavily normal / dry, lightly oily). Some skin-type
+photos undeniably contain real mild pores; that is unavoidable
+label noise. Empirically, the noise costs less than the domain gap
+it fills, and macro-\(F_1\) drops from 0.996 to 0.981 --- a healthy
+graceful-degradation signal, not a regression.
+
+\subsection{BCE positive weights for skin conditions}
+
+We compute per-class positive weights automatically from the actual
+training split. Concretely:
+
+\begin{itemize}
+    \item \(p_{\text{pores}} = n^{\text{neg}}_{\text{pores}} /
+        n^{\text{pos}}_{\text{pores}} \approx 2.39\).
+    \item \(p_{\text{blackheads}} = n^{\text{neg}}_{\text{blackheads}} /
+        n^{\text{pos}}_{\text{blackheads}} \approx 1.81\).
+\end{itemize}
+
+Both are within the safety clip range \([0.1, 10]\) so we do not
+have to worry about numerical instability, and both are recomputed
+whenever the dataset changes.
+
+\section{Splits}
+
+For datasets we split ourselves (\texttt{acne\_severity} and
+\texttt{skin\_conditions}) we use a stratified random 70 / 15 / 15
+split with a fixed seed, so the exact split is the same across
+training runs and a validation curve from one week can be compared
+against one from the next. The skin-type dataset is used as
+published, with the authors' existing train / valid / test folders
+respected.
+
+\section{Cleaning}
+
+The community datasets are noisy. During Phase 3 we spent
+substantial time in manual triage. The main categories of removed
+samples were:
+
+\begin{itemize}
+    \item Duplicate or near-duplicate images.
+    \item Images with heavy makeup or filters that obviously masked
+        the underlying skin condition.
+    \item Non-facial images that had slipped into face-labelled
+        folders.
+    \item Extremely low-resolution images (short side smaller than
+        \(200\) pixels).
+    \item Mislabelled samples where three annotators from the team
+        disagreed with the dataset's label.
+\end{itemize}
+
+\section{Augmentation}
+
+Training-time augmentations, in order:
+
+\begin{enumerate}
+    \item Random resized crop with scale in \([0.85, 1.0]\).
+    \item Random horizontal flip with probability \(0.5\).
+    \item Random rotation up to \(\pm 12^\circ\).
+    \item Colour jitter with brightness, contrast, and saturation
+        each in \([\,{-}0.15, +0.15\,]\).
+    \item ImageNet-normalisation to tensor.
+\end{enumerate}
+
+Validation and test transforms consist only of a resize, a centre
+crop to \(224 \times 224\), and ImageNet normalisation.
+
+\begin{observation}
+Early in Phase 2 we tried more aggressive augmentations
+(RandAugment, random erasing, strong colour jitter). All of them
+hurt skin-type accuracy in particular, because they alter the exact
+cues (colour, texture) the model relies on. This is one of the
+pitfalls that is easy to miss when reusing recipes from the ImageNet
+literature. The final augmentation stack is deliberately gentle.
+\end{observation}
+
+%==============================================================================
+\chapter{Our Algorithms}\label{ch:algorithm}
+%==============================================================================
+
+This is the main technical chapter of the book. It walks through the
+final pipeline first, then unpacks the decisions that led to it,
+including the ones that failed. The chapter is structured around the
+three phases rather than around a bulleted list of components,
+because the decisions do not make sense outside their chronological
+context: what looked correct in Phase 2 was often the exact bug that
+Phase 3 had to fix.
+
+\section{The final pipeline, end to end}\label{sec:final-pipeline}
+
+\Cref{fig:pipeline-final} is the state of the algorithm at the point
+of submission. Everything else in this chapter explains why each
+box is where it is.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\linewidth]{tikz/pipeline-final.pdf}
+    \caption{End-to-end runtime pipeline used by \cara at
+    submission time. The three \effnet models run sequentially on
+    a shared preprocessed tensor; the BLP engine composes their
+    outputs deterministically. Each of the arrows in the diagram
+    was, at one point in Phase 3, either wrong or missing.}
+    \label{fig:pipeline-final}
+\end{figure}
+
+Concretely, at inference time we execute:
+
+\begin{enumerate}
+    \item Decode the uploaded image bytes with PIL, apply
+        \texttt{ImageOps.exif\_transpose} so phone-orientation
+        metadata is respected.
+    \item Detect a face with an OpenCV Haar cascade. If the upright
+        detection fails, retry the detector at
+        \(\pm 15^\circ, \pm 30^\circ, \pm 45^\circ, \pm 90^\circ,
+        180^\circ\), rotate the underlying image to whichever angle
+        succeeded, and crop tightly.
+    \item Resize to \(224 \times 224\), apply ImageNet normalisation,
+        wrap in a \pytorch tensor.
+    \item Run the three \effnet models on the same tensor.
+        Acne severity and skin type produce softmax distributions
+        over four classes each; the multi-label skin-conditions
+        model produces two independent sigmoid probabilities. Any
+        sigmoid output above the (per-class-configured) threshold
+        of 0.5 becomes a ``finding''.
+    \item Feed the structured predictions into the BLP engine, which
+        walks its JSON rules and produces a deduplicated list of
+        ingredient recommendations, avoidances, and explanations.
+    \item Serialise to JSON and persist under
+        \texttt{storage/reports/\{report\_id\}.json}.
+\end{enumerate}
+
+Every stage in this list has an entry in the rest of this chapter.
+
+\section{Why \effnet, and why three of them}
+
+Choosing the backbone was an early decision that survived all three
+project phases. \effnet was picked at the end of Phase 2 through the
+head-to-head bake-off in \Cref{sec:phase2-arch}, where it beat
+ResNet, DenseNet, and a Vision Transformer on the same ACNE04
+benchmark. Beyond the raw accuracy number, its pretrained ImageNet
+weights are extremely strong per parameter and its smallest family
+member (\effnet-B0) is compact enough to run three sequential
+inferences on modest hardware inside our target latency, which
+matters for a web application.
+
+The follow-up question --- ``one big model or three small ones?''
+--- had been an open leaning since Phase 1 rather than a settled
+decision, and Phase 3 was where we finally had to answer it in code
+(\Cref{sec:phase3-scale-up}). The short version is that a single
+multi-task \effnet cannot balance three tasks whose datasets have
+different sizes, different label noise, and different natural class
+priors, and that a shared backbone makes it very hard to attribute a
+real-world failure to a specific sub-task. Three independent
+\effnet models won cleanly.
+
+\section{Two-stage transfer learning}\label{sec:two-phase}
+
+Each of the three models is trained with the following two-stage
+recipe, taken directly from
+\texttt{model\_service/training/train.py}. It is the same recipe
+that \effnet used to win the Phase-2 bake-off (\Cref{sec:phase2-arch});
+we adopted it from the very beginning and never departed from it.
+Note that the two ``stages'' below refer to \emph{training stages}
+of a single model, not to the three project phases discussed
+elsewhere in the book.
+
+\begin{description}
+    \item[Stage 1 --- head only.] The entire \effnet backbone is
+        frozen. Only the newly-initialised classifier head is
+        trained, with learning rate \(10^{-3}\). This lets the head
+        learn to project ImageNet features onto the new label space
+        without disturbing them.
+    \item[Stage 2 --- full fine-tune.] The upper blocks of the
+        backbone (blocks 6--8, about 3.16 million of the 4.01 million
+        parameters, i.e.\ 78.8\,\%) are unfrozen and trained with
+        learning rate \(10^{-4}\); the head keeps its
+        \(10^{-3}\).
+\end{description}
+
+Empirically, Stage 1 alone gets us most of the way to the final
+accuracy on all three tasks; Stage 2 typically adds another
+6--10 percentage points on the single-label tasks and pushes
+macro-\(F_1\) from around \(0.94\) to above \(0.98\) on the
+multi-label task.
+
+\Cref{fig:val-curves} shows the actual validation-accuracy curves
+for the acne severity task, taken from
+\texttt{training\_log.txt}. Both stages are visible: Stage 1
+plateaus around \(0.65\); Stage 2 continues from a similar starting
+point and lifts the best validation accuracy to \(0.729\).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{tikz/val-curves.pdf}
+    \caption{Actual per-epoch validation accuracy on the acne
+    severity task, from \texttt{training\_log.txt}. The dashed line
+    marks the best-saved checkpoint.}
+    \label{fig:val-curves}
+\end{figure}
+
+The multi-label skin-conditions task shows the same shape on
+validation macro-\(F_1\) (\Cref{fig:cond-curves}). The upper trace
+is retrain \#1 (the ACNE04-only negatives version); the lower trace
+is retrain \#2 (with the \(1{,}448\) skin-type negatives added).
+\Cref{sec:domain-adaptation} explains why the lower curve is the
+one we ship.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{tikz/cond-curves.pdf}
+    \caption{Per-epoch validation macro-\(F_1\) for both
+    skin-conditions retrains, from \texttt{training\_log.txt}.
+    Retrain \#1 peaks slightly higher on its own test split but
+    generalises worse to real-world photographs; see
+    \Cref{sec:domain-adaptation}.}
+    \label{fig:cond-curves}
+\end{figure}
+
+\section{Phase 2: comparing four backbone architectures on ACNE04}\label{sec:phase2-arch}
+
+Phase 2 was the phase in which we picked the backbone that survives
+to the final system. The setup was deliberate: we wanted the choice
+to be data-driven, so we ran a head-to-head bake-off on a single
+common benchmark --- the acne-severity dataset ACNE04 --- and each
+of the four team members took ownership of one architecture from a
+genuinely different family of computer-vision models. Each
+candidate was implemented in a separate side project (not visible
+in this repository); the final numbers were compared side by side
+at the end of Phase 2.
+
+Every candidate used the same acne dataset (ACNE04, treated as a
+four-class classification problem), the same train / validation /
+test split, and the same evaluation protocol. Every candidate was
+initialised from ImageNet-pretrained weights and fine-tuned on
+ACNE04 --- otherwise we would have been measuring the value of
+pretraining rather than the value of the architecture.
+
+Two design decisions that later became load-bearing were already in
+place before the bake-off began. First, from Phase 1 the
+recommendation layer was going to be a deterministic rule engine
+(BLP), not a learned fusion --- so nothing in this comparison was
+about how model outputs should be combined into recommendations,
+only about which model gives the best per-task predictions. Second,
+we had already decided that in the eventual multi-model system each
+skin aspect would have its own dedicated backbone. The purpose of
+Phase 2 was to answer ``which backbone family?'', not ``one model or
+many?''.
+
+\subsection{Candidate 1 --- ResNet (classical residual CNN)}
+
+ResNet~\cite{he2016deep} is the classical residual CNN and the
+backbone that has been the default baseline for image classification
+for a decade. Residual connections let gradients flow directly
+through skip paths, which is why deep ResNets train stably.
+
+\emph{Result on ACNE04: \(\sim 55\,\%\) validation accuracy.} On a
+few thousand mildly-labelled facial photographs this was the weakest
+of the four candidates. The most likely explanation is that ResNet
+was designed and pretrained for very large-scale classification
+tasks (millions of ImageNet images); its raw feature extractor is
+good, but it does not carry the strong per-task inductive biases of
+the newer architectures, and on our dataset scale the extra capacity
+turns into an overfitting liability rather than an accuracy boost.
+
+\subsection{Candidate 2 --- DenseNet (dense feature reuse)}
+
+DenseNet~\cite{huang2017densely} connects every layer to every
+later layer in the same block, so each layer receives as input the
+concatenated feature maps of all its predecessors. In principle
+this improves gradient flow and encourages the network to reuse
+low-level features rather than relearn them at every depth --- a
+property that intuitively helps on small datasets, where relearning
+features is exactly what you cannot afford.
+
+\emph{Result on ACNE04: \(\sim 62\,\%\) validation accuracy.} A
+clear step up from ResNet. Dense feature reuse did seem to help
+extract more from a limited number of ACNE04 photographs, but the
+computational cost of concatenating many feature maps at every
+depth also made this the slowest of the CNN candidates during
+training, which mattered given the modest compute we had
+available.
+
+\subsection{Candidate 3 --- Vision Transformer (ViT)}
+
+The Vision Transformer~\cite{dosovitskiy2021vit} discards
+convolutions entirely and treats an image as a sequence of small
+patches, processed by self-attention. In theory this gives the
+model a much wider effective receptive field --- every patch can
+attend to every other patch from layer one --- which we suspected
+might help on acne, since severity depends both on individual
+lesions and on how many of them are spread across the face.
+
+\emph{Result on ACNE04: \(\sim 68\,\%\) validation accuracy.} ViT
+was the second-strongest candidate and the one that made the
+choice interesting rather than obvious. The global self-attention
+did seem to help capture the ``how spread out is the acne'' cue
+that is important for the moderate-vs-severe boundary. The
+practical downside is that transformer backbones are known to need
+more data and more compute than CNNs to hit their best numbers,
+and on ACNE04 --- with a few hundred images per class and a laptop
+CPU budget --- ViT was still visibly under-trained at the point
+where the compound-scaled EfficientNet had already converged.
+
+\subsection{Candidate 4 --- \effnet (winner)}
+
+\effnet~\cite{tan2019efficientnet} is a compound-scaled CNN that
+jointly balances depth, width, and input resolution against a
+fixed compute budget. Its ImageNet weights are extremely strong
+per parameter, and its small model in the family (\effnet-B0)
+fits comfortably in our compute budget.
+
+\emph{Result on ACNE04: \(\mathbf{73.1\,\%}\) validation accuracy;
+\(\mathbf{69.5\,\%}\) accuracy on the held-out test set.} Best of
+the four, by a clear margin. The two-stage training recipe we
+committed to from the beginning (\Cref{sec:two-phase}) worked
+particularly well here: with the backbone frozen for the first ten
+epochs the head alone already reached \(56.5\,\%\) validation
+accuracy, and unfreezing the upper layers for another five epochs
+lifted validation accuracy by another sixteen or so points to
+\(73.1\,\%\). No other candidate showed that kind of improvement
+from fine-tuning in the same compute envelope.
+
+The Phase-2 conclusion was straightforward: while ViT proved
+itself to be a very strong architecture and took second place,
+\effnet won cleanly. The most credible explanation is not that
+\effnet is a fundamentally smarter architecture than a Vision
+Transformer, but that its pretrained weights are so well tuned
+that on a dataset of our size fine-tuning goes further faster.
+Compound scaling and pretraining together gave us the best
+accuracy-per-parameter and the best accuracy-per-training-hour on
+the hardware we actually had, and that is the choice we shipped.
+
+\subsection{Summary of the Phase-2 bake-off}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Phase-2 architecture bake-off on ACNE04 acne severity.
+    Each candidate was trained from ImageNet-pretrained weights on
+    the same split with the same protocol.}
+    \label{tab:phase2-arch}
+    \small
+    \begin{tabularx}{\linewidth}{lXlc}
+        \toprule
+        \textbf{Candidate} & \textbf{Family} & \textbf{Val.\ acc.} & \textbf{Verdict} \\
+        \midrule
+        ResNet    & Classical residual CNN            & $\sim$55\,\%   & Baseline \\
+        DenseNet  & Densely-connected CNN             & $\sim$62\,\%   & Improvement \\
+        ViT       & Vision Transformer (self-attention) & $\sim$68\,\% & Runner-up \\
+        \effnet   & Compound-scaled CNN               & \textbf{73.1\,\%} & \textbf{Selected} \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+At the end of Phase 2 we shipped a first proof of concept built on
+\effnet: an image upload flow, a single acne-severity classifier
+trained on ACNE04, a first version of the BLP rule engine covering
+the acne branch, and a report page. Validation numbers looked
+strong. There was one dataset in play, the recommendation layer
+was rule-based as promised from Phase 1, and no real user
+photographs from outside ACNE04 had yet been fed through the
+pipeline.
+
+\section{Phase 3: from a single-model POC to a multi-model application}\label{sec:phase3-scale-up}
+
+Phase 3 turned the POC into the final product. Because the POC only
+covered acne severity, the very first Phase-3 task was to
+instantiate the winning \effnet backbone twice more --- once for
+skin type, once for a group of secondary skin issues --- each with
+its own dataset and its own training run. This is the moment where
+the Phase-1 shortlist of datasets stopped being a plan and started
+being training material, and this is the moment where every
+weakness in that shortlist began to show.
+
+The multi-model layout also required a decision that Phase 2 had
+not needed to make. Given three per-task classifiers, how should
+their outputs be combined into a single report and a single
+recommendation list? We considered the following options:
+
+\begin{itemize}
+    \item \textbf{One big multi-task \effnet with three heads.} A
+        single shared backbone with three classification heads and
+        a weighted-sum loss. \emph{Rejected} because the three
+        datasets differ in size and label noise, the three heads
+        converge at different rates, and a shared backbone gets
+        pulled around by whichever head has the loudest gradient
+        signal at any moment --- exactly the kind of coupling that
+        makes it very hard to figure out which sub-problem is
+        misbehaving on a real user photograph.
+    \item \textbf{Three independent classifiers, weighted-vote
+        fusion.} Three independent \effnet classifiers, one per
+        task; a small set of per-model score thresholds combined
+        by a weighted vote to produce recommendations.
+        \emph{Rejected} because a scalar vote is not expressive
+        enough for compound rules of the form ``if acne is
+        moderate \emph{and} skin type is oily, recommend a BHA
+        and warn against occlusives''. To recover that
+        expressiveness we would have had to re-implement a rule
+        engine underneath the vote --- worse than starting from a
+        rule engine directly.
+    \item \textbf{Three independent classifiers, learned MLP
+        fusion.} Feed the concatenated softmax vectors into a
+        small MLP whose output is the recommendation set.
+        \emph{Rejected} because the recommendation vocabulary is
+        a labelled set (which ingredients apply to which
+        combination of predictions), and building ground truth
+        for that vocabulary requires a dermatologist. Without such
+        a signal the MLP has nothing meaningful to train against,
+        and any labels we could generate ourselves would just be
+        a reflection of the rules we would have written by hand
+        anyway --- with the added cost that the MLP would then
+        obscure the trace from prediction to recommendation,
+        breaking our Phase-1 explainability commitment.
+    \item \textbf{Three independent classifiers, rule-based BLP.}
+        Three dedicated \effnet classifiers plus a deterministic
+        rule engine that walks a JSON rules file and unions all
+        matching recommendations. Every recommendation shown to
+        the user can be traced to a single JSON entry.
+        \emph{Selected.} The rule engine was the recommendation
+        strategy we had committed to since Phase 1; the
+        independent-classifier design was the choice that gave us
+        the debuggability we wanted.
+\end{itemize}
+
+The selection here is not a new decision --- it is the
+consequence of the Phase-1 rule-based commitment plus the
+observation that a shared multi-task backbone would have made
+Phase-3 debugging materially harder. Everything that follows in
+this chapter is the story of what happened once that
+architecture met real user photographs.
+
+\section{Phase 3, part 1: real-world failures}\label{sec:phase3-failures}
+
+Real-world testing began with an ordinary event: one of us
+uploaded a personal selfie and got back a report that read
+\emph{severe acne, oily skin, wrinkles detected}. Every part of
+that answer was wrong. The selfie was of a clean adult face with
+no acne, no oiliness, and no visible wrinkles.
+
+That single photograph triggered an investigation that surfaced
+three separate defects:
+
+\begin{itemize}
+    \item A frontend field mismatch that displayed ``Low Confidence''
+        on every report regardless of the model's actual confidence,
+        which hid the real problem for weeks.
+    \item A preprocessing mismatch: the models were trained on
+        tight face crops but were being fed the full uploaded image
+        at inference time. See \Cref{sec:preprocessing}.
+    \item An architectural mismatch: the skin-issues model was a
+        softmax over five classes and was mathematically forced to
+        pick one, so it always hallucinated something on clean
+        faces. See \Cref{sec:multi-label-refactor}.
+\end{itemize}
+
+The three defects compounded, and their interaction was itself
+instructive. Once the frontend rendering was fixed we could see
+that the acne model was returning very low confidence on the
+photograph, which should have hidden the label under our
+confidence gate; the broken confidence field had been masking
+that. Once confidence was correctly rendered we could see that
+the preprocessing mismatch was producing spurious high-confidence
+predictions on in-the-wild inputs. And once preprocessing was
+fixed we could see that the skin-issues model still hallucinated
+at least one finding on every clean face, because it was
+structurally incapable of saying ``none''. Each fix uncovered the
+next.
+
+\section{Preprocessing parity}\label{sec:preprocessing}
+
+Preprocessing is where a large fraction of our Phase-3 engineering
+effort went, and probably the largest single contributor to
+real-world accuracy after data quality.
+
+\subsection{Face detection and cropping}
+Uploaded images vary wildly. Some are tight selfies; some are group
+photos; some are landscape shots with a face in the corner. Feeding
+the raw image to the model wastes most of the receptive field on
+background pixels and, worse, invites the model to key on
+background cues (clothing, walls, hair) that correlated with the
+dataset label distribution during training. We therefore detect
+the face first and crop tightly, matching the training distribution
+that the models had already learned.
+
+We considered three detectors: OpenCV Haar cascade, MediaPipe Face
+Detection, and MTCNN. Haar is by far the fastest and shipped with
+OpenCV, but only detects upright frontal faces. MediaPipe is
+robust across poses but adds a moderate dependency. MTCNN is the
+most accurate but noticeably slow on CPU. Given our latency budget
+and the fact that our target user submits a selfie, we chose Haar
+with a rotation-retry fallback (see below) rather than adding a
+new dependency.
+
+\subsection{The dead-code discovery}
+The early Phase-3 codebase already contained a full face-detection
+preprocessor in \texttt{model\_service/preprocessing/pipeline.py}.
+Its docstring promised: \emph{``Shared by both inference AND
+training so the distributions match.''} It was, in fact, never
+imported by the runtime path. The training scripts called it; the
+analysis service did not. Every real user upload was going
+straight into the model as a full uncropped image.
+
+The fix was a small wiring change in the analysis service:
+instantiate the pipeline once, pass every uploaded image through
+it before inference, and require a face to be detected before the
+models are consulted:
+
+\begin{lstlisting}[language=Python,caption={Wiring the preprocessing pipeline into the analysis service.}]
+class AnalysisService:
+    def __init__(self, orchestrator: InferenceOrchestrator, ...):
+        self._orchestrator = orchestrator
+        self._pipeline = PreprocessingPipeline(
+            require_face=True,   # NEW in Phase 3
+            apply_mask=False,
+        )
+
+    def analyze(self, image_bytes: bytes) -> AnalysisReport:
+        pre, tensor = self._pipeline.process(image_bytes)
+        if not pre.success:
+            return no_face_report(pre.status_message)
+        predictions = self._orchestrator.predict_all(tensor)
+        return self._build_report(predictions)
+\end{lstlisting}
+
+Concrete impact: on our nine hand-labelled real-world photographs,
+acne accuracy went from 3/9 to 7/9 correct and false-\emph{severe}
+alarms dropped from 2/9 to 1/9 --- with no model retraining. The
+model was fine; it just needed to see the same input it had trained
+on.
+
+\subsection{EXIF orientation and rotation retry}\label{sec:rotation}
+After wiring the pipeline in we hit a second bug on a real photograph
+taken lying down (head tilted about \(15^\circ\) on a pillow, iPhone
+JPEG with an EXIF orientation tag). Face detection failed with
+``No face detected'' even though the photograph clearly showed a
+face. Two root causes:
+
+\begin{enumerate}
+    \item \texttt{cv2.imdecode} ignores EXIF orientation, so the
+        iPhone photograph loaded sideways into the array.
+    \item Even after we corrected orientation, the Haar cascade only
+        detects upright frontal faces, so a mildly tilted head fails
+        the detector.
+\end{enumerate}
+
+Both fixes live in \texttt{pipeline.py}:
+
+\begin{itemize}
+    \item Decode with PIL and apply
+        \texttt{ImageOps.exif\_transpose} before handing off to
+        OpenCV. This respects the phone's orientation tag.
+    \item After the upright detection attempt fails, retry the
+        detector on rotated copies of the image at
+        \(\pm 15^\circ, \pm 30^\circ, \pm 45^\circ, \pm 90^\circ,
+        180^\circ\). When one succeeds we crop from the rotated
+        image so that the resulting face is upright, matching the
+        training distribution.
+\end{itemize}
+
+A separate test in the regression suite --- ``at least 80\,\% of
+real-world photographs must produce a face detection'' --- guards
+against this regression at CI time.
+
+\section{Phase 3, part 2: refactoring skin issues to multi-label}\label{sec:multi-label-refactor}
+
+After preprocessing parity was restored the acne and skin-type
+models behaved as they should on real photographs, but the
+skin-issues model continued to hallucinate wrinkles or dark spots
+on clean faces. The root cause was the softmax head we described in
+\Cref{sec:multilabel-formal}: it was mathematically forced to pick
+exactly one of \{healthy, blackheads, dark spots, pores, wrinkles\}
+and could not say ``none''.
+
+The refactor changed six things at once:
+
+\begin{table}[htbp]
+    \centering
+    \caption{The single-label to multi-label refactor.}
+    \label{tab:multi-label-refactor}
+    \small
+    \begin{tabularx}{\linewidth}{lXX}
+        \toprule
+        \textbf{Aspect} & \textbf{Before (single-label)} & \textbf{After (multi-label)} \\
+        \midrule
+        Loss function      & CrossEntropyLoss              & BCEWithLogitsLoss \\
+        Output shape       & Softmax (sum to 1)            & Sigmoid per class (independent) \\
+        Prediction         & Argmax                        & Threshold each class independently \\
+        Label format       & Single integer                & Multi-hot vector \([1,0,1]\) \\
+        ``None'' possible? & No (forced to pick)           & \textbf{Yes} (all sigmoids below threshold) \\
+        Reported metric    & Accuracy                      & Per-class \(F_1\), macro-\(F_1\) \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+At the same time we shrank the label space from five classes to
+two: only \emph{pores} and \emph{blackheads}. The reasons for
+dropping the other three are in \Cref{tab:dropped-classes}; the
+short version is that \emph{healthy} is now implicit under
+multi-label (empty set = no notable conditions) and the other two
+were dataset-quality casualties.
+
+\subsection{Downstream code changes}
+
+Multi-label is not just a training decision; it changes the shape
+of the data at every boundary. The downstream edits are worth
+listing because they were the majority of the Phase-3 diff:
+
+\begin{itemize}
+    \item \texttt{shared/schemas.py}: added
+        \texttt{SkinCondition} enum,
+        \texttt{SkinConditionFinding},
+        \texttt{MultiLabelPrediction}. Kept the deprecated
+        \texttt{SkinIssue} enum so historical reports on disk still
+        deserialise.
+    \item \texttt{model\_service/training/train.py}: added a
+        \texttt{multi\_label=True} code path with
+        \texttt{BCEWithLogitsLoss}, per-class \(F_1\) evaluation,
+        threshold-based prediction, and a new
+        \texttt{MultiLabelImageFolderDataset} that reads multi-hot
+        labels from the three-folder layout.
+    \item \texttt{model\_service/inference/orchestrator.py}:
+        \texttt{predict()} branches to
+        \texttt{\_predict\_multi\_label()} for the skin-conditions
+        model, applies the threshold, and sorts findings by
+        confidence.
+    \item \texttt{backend/blp/engine.py}: iterates the findings list,
+        OR-combines the recommendation sets from the matching rules,
+        deduplicates by ingredient.
+    \item \texttt{backend/services/analysis\_service.py}: the
+        confidence gate handles both single-label
+        (\(\text{conf} \ge \text{threshold}\)) and multi-label
+        (\(|\text{findings}| > 0\)) prediction shapes.
+    \item \texttt{frontend/src/pages/ResultsPage.js}: renders a list
+        of findings, or a ``no notable conditions'' chip when the
+        list is empty.
+    \item Tests: rewrote \texttt{test\_blp.py} around multi-label
+        semantics and added multi-label-specific assertions to
+        \texttt{test\_real\_world\_regression.py}.
+\end{itemize}
+
+At the end of the refactor we retrained the skin-conditions model
+from scratch on the ACNE04-only negatives (retrain \#1). Its
+held-out macro-\(F_1\) hit \(0.996\). We were briefly optimistic.
+
+\section{Phase 3, part 3: the domain-adaptation retrain}\label{sec:domain-adaptation}
+
+The regression suite told a different story. On our set of nine
+stock-photo test images plus two iPhone selfies, retrain \#1
+misfired \texttt{blackheads=0.98--1.00} on 7 of 11 photographs, even
+though the user's own iPhone selfies came back correctly with
+\texttt{blackheads=0.29} (below threshold).
+
+This is the same class of failure as the preprocessing bug earlier,
+just displaced. The training-set macro-\(F_1\) of \(0.996\) proved
+that the model could discriminate its own training distribution
+almost perfectly. It said nothing about how the model behaved when
+the input distribution shifted, because the test split shares the
+same photographic style as the training set.
+
+Concretely, our positives (\texttt{pores}, \texttt{blackheads})
+were arbitrary Roboflow crops from the internet, while our
+negatives (all 483 of them, from \texttt{acne\_severity/clear/})
+came from one very specific photographic style: clinical ACNE04
+portraits. The model discovered that ``ACNE04-style photograph''
+was an excellent proxy for ``no condition'' and locked onto it.
+Everything that did not look ACNE04-clinical --- including most
+stock photographs and, in general, real user selfies --- got
+flagged as positive for blackheads.
+
+\subsection{The creative fix: cross-task negative mining}
+
+Sourcing a fresh set of hand-labelled clean-skin photographs would
+have taken days and a lot of energy. Instead, we noticed that we
+already had \(\sim 4{,}000\) additional in-the-wild face photographs
+sitting in the skin-type training data. Skin type (oily / dry /
+normal / combination) is orthogonal to the presence of pores and
+blackheads. Perhaps we could reuse those photographs as extra
+negative anchors for the skin-conditions model.
+
+Naive reuse was dangerous. Some skin-type photographs undeniably
+contain real mild pores or blackheads --- adding them as
+\texttt{[0,0]} labels would introduce label noise. And dumping all
+4{,}000 into the negatives folder would swamp the two positive
+classes and skew the class balance.
+
+We compromised by quota-sampling a ``cleanest-leaning'' subset
+weighted toward classes least likely to correlate visually with
+pores or blackheads:
+
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+normal      & 500 \\
+dry         & 500 \\
+combination & 248 (all available in \texttt{train/}) \\
+oily        & 200 \\
+\midrule
+\textbf{Total} & 1\,448 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+We prefixed every added file with \texttt{skintype\_<class>\_} so
+that (i) the additions are easy to identify on disk, (ii) they are
+easy to remove if we regret them later, and (iii) an auditor can
+verify what fraction of the negatives folder came from
+which source.
+
+The final negatives folder ended up with 1{,}931 images
+(\(483 + 1{,}448\)), the pores folder with 1{,}632, and the
+blackheads folder with 1{,}970 --- a manageable class ratio.
+
+\subsection{The retrain and the honest numbers}
+
+That drop is not a regression. The first model was overfitting to
+a narrow photographic style; the second is exposed to a much
+wider distribution, so its training-set macro-\(F_1\) is lower but
+its predictions on real user photographs are much better
+calibrated. The trade has a name: graceful degradation of the
+in-distribution metric in exchange for out-of-distribution
+generalisation.
+
+The regression-suite numbers make the trade explicit. On the same
+set of 11 real-world photographs:
+
+\begin{table}[htbp]
+    \centering
+    \caption{Real-world regression on the multi-label skin-conditions
+    model, before and after the domain-adaptation retrain.}
+    \label{tab:regression-cond}
+    \small
+    \begin{tabular}{lcc}
+        \toprule
+        & \textbf{Retrain \#1} & \textbf{Retrain \#2} \\
+        \midrule
+        Training macro-\(F_1\) & 0.996 & 0.981 \\
+        Skin-conditions per-image failures (out of 11) & 7 & 3 \\
+        User iPhone selfie: \texttt{blackheads} probability & 0.29 & 0.00 \\
+        User iPhone selfie: \texttt{pores} probability     & --   & 0.00 \\
+        \(\ldots\) \texttt{test\_skin\_conditions\_reports\_empty\_findings\_sometimes} & fail & pass \\
+        \(\ldots\) \texttt{test\_skin\_conditions\_does\_not\_flag\_everything}         & fail & pass \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The two population-level tests that started green in retrain \#2
+were both red in retrain \#1. They are the tests that catch
+class-collapse without needing per-image labels, and they are what
+told us the trade was worth making even at the cost of the
+training-set metric.
+
+\subsection{Why this is defensible}
+
+Repurposing data across sub-models within the same pipeline is a
+recognised technique --- variants of it appear in the literature
+under names such as domain adaptation via auxiliary data and
+hard-negative mining from adjacent tasks. It trades a small,
+uniform amount of label noise for a large gain in photographic
+diversity. The alternative --- sourcing several thousand
+hand-curated clean-face photographs from scratch --- would have
+taken days of work and produced a smaller distribution shift.
+
+We made this trade explicit in three places: in code (the file
+prefix makes the mixture auditable), in tests (the
+regression suite explicitly compares before and after), and in
+this book, so that any future contributor can revisit the trade
+with full context.
+
+\section{Confidence and uncertainty}\label{sec:confidence}
+
+Every prediction carries a confidence signal. For the single-label
+models it is the maximum softmax probability. For the multi-label
+model it is a per-class sigmoid probability. Downstream code
+treats confidence as a first-class citizen:
+
+\begin{itemize}
+    \item If either the acne or the skin-type confidence is below
+        the configured floor (\texttt{confidence\_threshold}, currently
+        \(0.30\)), the corresponding section of the report is
+        replaced with a neutral ``low confidence'' message rather
+        than the top-1 label. This is what our truthfulness rule
+        looks like at runtime.
+    \item For the multi-label skin-conditions model, we simply do
+        not emit a finding for a class whose sigmoid probability is
+        below the threshold. If no class fires, the report reads
+        ``no notable conditions'' and no ingredient rules are
+        triggered for that section.
+\end{itemize}
+
+The confidence threshold of \(0.30\) is deliberately low; we would
+rather show a confident label with a hedged confidence bar than
+hide a plausible answer entirely. Every threshold in the pipeline
+is a JSON configuration entry rather than a hard-coded constant,
+because we edit them often when the trade between coverage and
+truthfulness shifts.
+
+\section{The BLP recommendation engine}\label{sec:blp-engine}
+
+The BLP engine takes a structured prediction and evaluates a
+JSON-configured rule set. Each rule has a precondition (a partial
+specification of the prediction), a set of ingredients to
+recommend, and a plain-English explanation string that is shown to
+the user.
+
+The engine currently loads three rule maps from
+\texttt{backend/blp/rules.json}: one for acne severity, one for
+skin type, and one for the multi-label skin conditions. Rules are
+matched in a deterministic order; matching rules union their
+recommendations; the resulting ingredient list is deduplicated by
+ingredient name.
+
+\begin{lstlisting}[language=Python,caption={A representative BLP rule, from \texttt{rules.json}.}]
+"moderate": {
+  "explanation": "Moderate acne detected -- multiple visible blemishes or inflamed spots.",
+  "recommendations": [
+    {"ingredient": "Benzoyl Peroxide (2.5-5%)",
+     "reason":     "Kills acne-causing bacteria and reduces inflammation",
+     "category":   "treatment"},
+    {"ingredient": "Retinol (0.3-0.5%)",
+     "reason":     "Increases cell turnover and prevents clogged pores",
+     "category":   "treatment"},
+    {"ingredient": "Niacinamide (10%)",
+     "reason":     "Calms inflammation and strengthens skin barrier",
+     "category":   "serum"}
+  ],
+  "educational_note": "Moderate acne benefits from a targeted routine. Introduce active ingredients one at a time."
+}
+\end{lstlisting}
+
+\subsection{Rule design principles}
+
+We authored the rules under three self-imposed constraints:
+
+\begin{enumerate}
+    \item \textbf{Every rule is defensible.} Every ingredient
+        recommendation is supported by consumer-facing dermatology
+        literature (peer-reviewed sources where possible, reputable
+        dermatology textbooks otherwise).
+    \item \textbf{No conflicting recommendations.} If two rules
+        match the same prediction, they may not recommend an
+        ingredient that another matching rule warns against. The
+        BLP test suite includes a lint that fails if this invariant
+        is ever violated.
+    \item \textbf{Uncertainty short-circuits recommendations.}
+        When the confidence gate fires for a model, the
+        corresponding section of the report is filled with a
+        neutral message rather than a rule-based recommendation.
+\end{enumerate}
+
+\subsection{Coverage over the label spaces}
+
+The rules file must cover the label spaces we care about. Acne
+severity and skin type are 4-class softmaxes, so each has four
+entries. The multi-label skin conditions have three interesting
+cases: pores only, blackheads only, and both simultaneously.
+Empty findings do not trigger a skin-condition rule at all --- the
+absence of a rule is itself a rule.
+
+\Cref{tab:rule-coverage} shows the number of rules per branch of
+the rule file, from the current \texttt{rules.json}. Every branch
+of the label space is covered, and this is enforced by a test in
+\texttt{test\_blp.py}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Rule coverage over the three label spaces, from
+    \texttt{backend/blp/rules.json}.}
+    \label{tab:rule-coverage}
+    \small
+    \begin{tabular}{lrr}
+        \toprule
+        \textbf{Rule branch} & \textbf{Classes} & \textbf{Rules} \\
+        \midrule
+        Acne severity         & 4 & 4 \\
+        Skin type             & 4 & 4 \\
+        Skin conditions       & 3 (pores / blackheads / both) & 3 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{Codebase sanitation}
+
+While we were rebuilding the pipeline we deleted a small mass of
+dead code that had accumulated during Phases 1 and 2:
+
+\begin{itemize}
+    \item \texttt{model\_service/acne\_model/} and
+        \texttt{model\_service/pores\_model/}: empty modules from
+        Phase 1 that predated the unified training script.
+    \item \texttt{model\_service/skin\_issues\_model/} and
+        \texttt{model\_service/skin\_type\_model/}: modules that
+        defined unused \texttt{SkinIssuesModel} and
+        \texttt{SkinTypeModel} classes shadowed by the real
+        implementations in \texttt{train.py::build\_model()} and
+        \texttt{orchestrator.py::\_build\_efficientnet()}.
+    \item Old checkpoints from the deprecated skin-issues single-label
+        model, kept as read-only references but no longer loaded at
+        runtime.
+\end{itemize}
+
+Deleting orphaned modules matters because a future contributor
+would otherwise waste time trying to figure out which of two
+definitions is the ``real one''.
+
+%==============================================================================
+\chapter{Experiments}\label{ch:experiments}
+%==============================================================================
+
+This chapter reports the experiments that shaped the final system.
+The largest and most important experiments --- the Phase-2
+architecture comparison and the Phase-3 domain-adaptation retrain
+--- have already been covered in \Cref{ch:algorithm}; this chapter
+groups the remaining single-purpose experiments and the failures
+that did not fit anywhere else.
+
+\section{Experimental setup}
+
+Unless stated otherwise, every experiment uses:
+
+\begin{itemize}
+    \item \effnet backbone with a small custom head (dropout
+        \(p=0.3\), then a single linear layer).
+    \item \(224 \times 224\) input, ImageNet normalisation.
+    \item AdamW, weight decay \num{1e-4}, cosine learning-rate
+        schedule with a short warm-up.
+    \item Two-stage transfer learning as described in
+        \Cref{sec:two-phase}.
+    \item Early stopping on validation loss (or macro-\(F_1\) for
+        multi-label) with patience 5.
+\end{itemize}
+
+A full retrain of all three models takes on the order of a few
+hours on the machines we develop on.
+
+\section{Failed experiment: naive resizing without face crop}
+
+Very early we tried skipping face detection and letting a resized
+full image go straight into the model, on the assumption that a
+convolutional network would find the face by itself.
+
+\emph{What went wrong.} Accuracy on the acne task dropped
+noticeably, and confusion-matrix inspection showed the model
+keying on background cues (hair, clothing, walls) that happened to
+correlate with class labels in the training folder. Skin-type
+accuracy was worse still, because skin type depends on skin
+texture and colour, which get diluted by the surrounding pixels.
+
+\emph{Lesson.} Face detection is not just an optimisation but a
+correctness requirement: without it, the model is free to key on
+whatever spurious signal correlates with the label. We
+subsequently relearned this lesson the hard way in Phase 3, when
+the face-crop preprocessor turned out to be present in the code
+but disconnected from the runtime path (\Cref{sec:preprocessing}).
+
+\section{Failed experiment: unweighted cross-entropy}
+
+Skipping class weights during training saved a few lines of code.
+
+\emph{What went wrong.} The acne classifier converged to a strong
+\emph{mild}-everywhere detector. Overall accuracy looked fine on
+the (imbalanced) test set, but per-class recall on \emph{severe}
+was near zero. This is exactly the failure mode our truthfulness
+rule forbids: a user with severe acne would be told they had mild
+acne.
+
+\emph{Lesson.} Weighted cross-entropy (\Cref{eq:weights}) is not
+optional on imbalanced skin datasets. Every subsequent single-label
+experiment uses it, with weights recomputed automatically from the
+current split.
+
+\section{Failed experiment: aggressive augmentation}
+
+We tried a heavier augmentation stack borrowed from ImageNet-style
+recipes: RandAugment, random erasing, strong colour jitter.
+
+\emph{What went wrong.} Skin type is signalled largely by colour
+and texture. Aggressive colour jitter destroys the signal we are
+trying to classify. Random erasing removes exactly the small
+regions (a patch of oily forehead, a cluster of pores) that carry
+the label.
+
+\emph{Lesson.} Augmentation must be chosen with the task in mind.
+Recipes that work for object recognition do not automatically
+transfer to skin classification. The final augmentation stack is
+listed in \Cref{ch:data} and is deliberately gentle.
+
+\section{The two-stage training recipe}
+
+The two-stage transfer-learning recipe described in
+\Cref{sec:two-phase} --- head-only warm-up followed by an unfreeze
+of the upper backbone blocks --- was not the result of an ablation.
+We adopted it from the very first day we started training an
+\effnet model in Phase 2, and it is the recipe that produced the
+Phase-2 numbers reported in \Cref{sec:phase2-arch}. No other
+schedule was ever used for the \effnet model, so we did not have a
+one-stage baseline to compare against.
+
+We still consider the recipe a good default rather than a happy
+accident. The head-only warm-up prevents the freshly-initialised
+classifier head from pushing large, uninformed gradients back
+through the pretrained backbone before it has learned to project
+ImageNet features onto our label space; the follow-up fine-tune
+adapts the upper blocks to skin-specific features while leaving
+the lower, more generic layers alone. The three-way combination of
+frozen lower blocks, unfrozen upper blocks, and different learning
+rates for the backbone and head is what does the actual work.
+
+\section{Backbone selection revisited}
+
+The winning backbone was chosen empirically in the Phase-2 bake-off
+(\Cref{sec:phase2-arch}). \Cref{tab:backbones} shows why the choice
+also makes sense on paper: at \(224\times 224\) input, \effnet sits
+in the sweet spot of parameters and FLOPs for the compute we had
+to work with. ResNet-50 (a heavier ResNet variant than what we tested
+in Phase 2) has roughly ten times the FLOPs of \effnet, which would
+have pushed the total request latency well past our budget once
+three models had to run per request. MobileNetV3-Small would fit
+the budget with room to spare but its ImageNet top-1 accuracy is
+several points below \effnet, so we would have been paying for
+extra headroom we did not need.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Backbone comparison at \(224\times 224\) input.
+    Params and FLOPs from the published papers.}
+    \label{tab:backbones}
+    \small
+    \begin{tabularx}{\linewidth}{lrrX}
+        \toprule
+        \textbf{Backbone} & \textbf{Params (M)} & \textbf{FLOPs (G)} & \textbf{Verdict} \\
+        \midrule
+        MobileNetV3-Small & 2.5  & 0.06 & Fast, but ImageNet accuracy leaves headroom on the table \\
+        \effnet           & 5.3  & 0.39 & \textbf{Selected} --- best empirical accuracy on ACNE04 in our FLOP budget \\
+        ResNet-50         & 25.6 & 4.10 & Too heavy for three sequential models on CPU \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\section{The real-world regression suite}\label{sec:regression}
+
+The single largest change to our engineering practice in Phase 3
+was the introduction of a real-world regression suite. The suite
+lives in \texttt{tests/test\_real\_world\_regression.py} and has
+three layers:
+
+\begin{enumerate}
+    \item \textbf{Per-image assertions.} Hand-labelled ground truth
+        for the images in \texttt{image tests people/} is stored in
+        \texttt{tests/fixtures/real\_world\_labels.json}. Each
+        assertion runs the full inference pipeline (including face
+        detection) on one image and checks the predicted label
+        against the ground truth. Fields left as \texttt{null}
+        skip cleanly, so partial labelling is fine.
+    \item \textbf{Population-level sanity checks.} These check
+        properties of the model's behaviour across the entire
+        real-world folder without needing per-image labels. Two
+        representative examples:
+        \emph{``on a set of predominantly clean faces, the acne
+        model MUST predict `clear' at least once''}, and
+        \emph{``the multi-label skin-conditions model MUST return an
+        empty findings set at least once''}. Both of these tests
+        were red under the initial Phase-3 models and green under
+        the final Phase-3 models. That flip is a large part of what
+        we mean when we say the Phase-3 rework was necessary.
+    \item \textbf{Multi-label specific assertions.} Threshold
+        checks, empty-set checks, and per-class calibration checks
+        added when we moved to the sigmoid architecture.
+\end{enumerate}
+
+The lesson from this suite is not that our old
+\texttt{test\_model\_accuracy.py} was wrong --- it was correct at
+what it did. It is that \emph{a test that pulls samples from the
+training folders can only prove the model memorised its training
+folders}. Real production quality has to be measured against a
+distribution the model has never seen. The regression suite is our
+version of that measurement.
+
+%==============================================================================
+\chapter{Results and Evaluation}\label{ch:results}
+%==============================================================================
+
+\section{Final headline numbers}
+
+\Cref{tab:final-numbers} reports the results of the final trained
+models against their own held-out validation splits, as recorded in
+\texttt{training\_log.txt}. Because the three tasks have different
+label spaces (4-class softmax for two, 2-class multi-label for the
+third), the metrics are not directly comparable to each other. We
+report the number the metric was designed for: validation accuracy
+for the single-label tasks, macro-\(F_1\) for the multi-label task.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Final validation metrics for the three models, from
+    \texttt{training\_log.txt}.}
+    \label{tab:final-numbers}
+    \small
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Task} & \textbf{Head type} & \textbf{\# classes} & \textbf{Best val metric} \\
+        \midrule
+        Acne severity   & Softmax             & 4 & 0.729 (accuracy) \\
+        Skin type       & Softmax             & 4 & 0.709 (accuracy) \\
+        Skin conditions & Sigmoid (\(\times\)2) & 2 (multi-label) & \textbf{0.981 (macro-\(F_1\))} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\linewidth]{tikz/final-bar.pdf}
+    \caption{Best validation metric per task. Bars for acne severity
+    and skin type report accuracy; the skin-conditions bar reports
+    macro-\(F_1 \times 100\). The metrics are not on the same
+    footing --- see \Cref{sec:interpreting-numbers}.}
+    \label{fig:final-bar}
+\end{figure}
+
+\section{Interpreting the numbers}\label{sec:interpreting-numbers}
+
+The three numbers in \Cref{tab:final-numbers} are best read side by
+side with the class structures they measure.
+
+\begin{itemize}
+    \item \textbf{Acne severity (72.9\,\%).} Four classes on an
+        ordinal scale (\emph{clear} \(\to\) \emph{severe}). Most
+        errors are between adjacent classes, which is the expected
+        pattern for an ordinal task and much less harmful than a
+        cross-class error. Trained on the cleanest of our datasets.
+    \item \textbf{Skin type (70.9\,\%).} Four classes with genuinely
+        fuzzy boundaries, particularly \emph{combination} against
+        \emph{oily} and \emph{normal} against \emph{dry}. On our
+        own inspection of the training data, two team members
+        looking at the same photograph frequently disagreed on the
+        label, which suggests the accuracy ceiling on this dataset
+        is not far above where we already sit.
+    \item \textbf{Skin conditions (macro-\(F_1\) \(= 0.981\)).}
+        Multi-label with independent sigmoid outputs; the metric
+        rewards correctly saying ``present'' or ``absent'' on each
+        of the two classes independently. The number matters less
+        than the qualitative change from the initial Phase-3
+        softmax skin-issues model: the multi-label version can
+        output the empty set on a clean face, which the softmax
+        model could not.
+\end{itemize}
+
+\section{Real-world regression results}
+
+The metric that matters most for a shipped product is not any of
+the training-split numbers above --- it is the real-world
+regression pass rate. \Cref{tab:regression-results} reports the
+before/after numbers on our small hand-labelled real-world set
+(11 photographs).
+
+\begin{table}[htbp]
+    \centering
+    \caption{Real-world regression outcomes before and after the
+    Phase-3 rework. The ``before'' column is the state of the
+    initial Phase-3 models (softmax skin-issues, disconnected
+    preprocessing, ACNE04-only negatives); the ``after'' column is
+    the state of the final shipped models. ``Population sanity''
+    rows are boolean: either the model can produce the class at
+    least once on the folder or it cannot.}
+    \label{tab:regression-results}
+    \small
+    \begin{tabularx}{\linewidth}{Xcc}
+        \toprule
+        \textbf{Assertion} & \textbf{Initial Phase 3} & \textbf{Final Phase 3} \\
+        \midrule
+        Per-image acne label correct (of 9 hand-labelled photos) & 3 / 9 & 7 / 9 \\
+        False \texttt{severe} alarms (of 9)                      & 2 / 9 & 1 / 9 \\
+        Population: model ever predicts \texttt{clear}           & pass  & pass  \\
+        Population: skin-conditions ever returns empty findings  & \textbf{fail} & \textbf{pass} \\
+        Population: skin-conditions does not flag everything     & \textbf{fail} & \textbf{pass} \\
+        Face-detection success rate on real photos               & pass  & pass  \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+The two rows that flipped from fail to pass are the ones we care
+about most. They correspond exactly to the two bugs that motivated
+the Phase-3 rework: ``the app says something wrong on a clean
+face'' and ``the app cannot say `nothing to report'''.
+
+\section{Qualitative behaviour on real inputs}
+
+Aggregate numbers hide the texture of what the system actually
+does. During Phase-3 real-world testing we settled into a small
+set of patterns that recur across the hand-labelled folder:
+
+\begin{itemize}
+    \item On a well-lit, correctly-framed adult selfie the three
+        cards typically agree with what a human observer would
+        say. Ingredient recommendations are stable across small
+        perturbations of the same face (different day, different
+        lighting), which is the calibration property we care
+        about.
+    \item On a clean adult face the multi-label skin-conditions
+        card produces the empty findings set. This is the
+        behaviour the initial Phase-3 softmax skin-issues model
+        could not produce; it is exercised as a hard assertion in
+        the regression suite (\Cref{sec:regression}) so that it
+        does not silently regress.
+    \item On an under-exposed or blurry photograph the acne and
+        skin-type cards typically fall below the confidence gate
+        (0.30) and are replaced with the neutral ``low
+        confidence'' banner. The BLP engine emits no
+        recommendations for those sections. This is the
+        truthfulness rule in action: rather than guess, the
+        product asks the user for a better photograph.
+    \item On an image with no detectable face --- either because
+        no face is present or because Haar and all rotation
+        fallbacks fail --- the analysis service short-circuits
+        with a \texttt{NO\_FACE} status, and the frontend renders
+        an actionable ``no face detected'' message rather than a
+        fabricated report.
+\end{itemize}
+
+None of these patterns is exceptional; the point is that they
+recur, and that they recur \emph{by design} rather than by
+accident. Each of the four cases above is covered by at least one
+test in \texttt{test\_real\_world\_regression.py} or
+\texttt{test\_e2e\_pipeline.py}.
+
+\section{Latency and resource profile}
+
+Latency matters for a web application. Timing a typical
+\texttt{/api/analyze} request on the machine we used for
+integration testing (warm cache, three models loaded once at
+startup), the total wall-clock lands in the region of roughly one
+to two seconds. Each \effnet forward pass dominates its part of
+the request; the three models today run sequentially, so the CNN
+cost is approximately three times a single forward pass.
+Everything else (image decoding, face detection, resize + ImageNet
+normalisation, BLP evaluation, report persistence) is small
+compared to the CNN cost.
+
+Two consequences follow. First, if latency ever becomes a problem
+the natural knob is to run the three model calls in parallel
+across threads or processes; the pipeline is trivially embarrassingly
+parallel at that stage. Second, moving to a lighter backbone would
+buy back at most a few hundred milliseconds while giving up
+several points of accuracy, which is not a trade we would take
+today.
+
+%==============================================================================
+\chapter{The Product}\label{ch:product}
+%==============================================================================
+
+This chapter describes \cara as a piece of software from the user's
+point of view. Everything shown here is a real screenshot of the
+running application, not a mockup.
+
+\section{User story}
+
+The primary user of \cara is a curious, non-expert consumer who has
+a skincare question they cannot easily answer. A typical
+interaction takes roughly a minute:
+
+\begin{enumerate}
+    \item The user opens the web app, sees the landing page, and
+        clicks \emph{Start Analysis}.
+    \item They log in (or register a new account). Reports are
+        stored per user so the history page works.
+    \item They upload a well-lit selfie or take one directly with
+        the live-camera capture.
+    \item The frontend uploads the image to the backend.
+    \item Within a couple of seconds, the backend returns a
+        structured report.
+    \item The frontend renders the report: acne severity, skin
+        type, detected conditions, per-model confidence bars,
+        recommended ingredients, and a plain-English explanation.
+    \item The report is persisted, and later becomes clickable in
+        the \emph{History} page.
+\end{enumerate}
+
+\section{The landing page and disclaimer}
+
+\Cref{fig:home} is the landing page. The disclaimer sits below the
+call to action so it is impossible to miss and impossible to skip.
+It is one of two places in the app where copy is not derived from
+the API response --- the other is the confidence-hedge text on the
+report page --- because the disclaimer is a design commitment
+rather than a runtime signal.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.75\linewidth]{front.png}
+    \caption{The \cara landing page. The ``Educational Use Only''
+    banner at the bottom is a first-class part of the layout, not
+    a footer.}
+    \label{fig:home}
+\end{figure}
+
+\section{Authentication}
+
+\Cref{fig:login} shows the login page. Users register through a
+separate flow (email + password) and are then logged in over JWT.
+Reports on the History page are scoped to the current user; there
+is no shared or global history.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.55\linewidth]{login.png}
+    \caption{The login page. Attempting to reach a protected page
+    without a session redirects here.}
+    \label{fig:login}
+\end{figure}
+
+\section{Analyze --- upload and live capture}
+
+\Cref{fig:upload} is the primary Analyze page. The user picks
+either \emph{Use live camera} or \emph{Choose file}. The tips box
+is deliberately in the primary flow rather than tucked away in
+help; a bad photograph is the single most common cause of a
+disappointing report, so it is worth the screen real estate.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.65\linewidth]{upload.png}
+    \caption{The Analyze page. Tips for a good photograph are
+    surfaced directly in the flow.}
+    \label{fig:upload}
+\end{figure}
+
+\subsection{File-picker flow}
+
+\Cref{fig:filechoose} is the state after the user chooses a file.
+The Analyze button is now enabled; the Clear button lets the user
+start over without touching the file input again.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.65\linewidth]{filechoose.png}
+    \caption{File-picker flow with a selected image ready to
+    analyse.}
+    \label{fig:filechoose}
+\end{figure}
+
+\subsection{Live-camera capture with face lock}
+
+\Cref{fig:facelock} is the live-capture flow. The overlay draws an
+oval on the video feed and continuously evaluates four checks ---
+lighting, face detection, position, angle --- until all four are
+green, at which point the capture button becomes active and the
+frame is grabbed. This is the frontend's equivalent of the
+truthfulness rule: if the input is not usable we ask the user for
+a better one before we spend a model call on it.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.65\linewidth]{facelock.png}
+    \caption{Live camera capture with lighting / face /
+    position / angle checks. The button unlocks only when all four
+    are green.}
+    \label{fig:facelock}
+\end{figure}
+
+\section{Results}
+
+The results page renders each of the three model outputs as a
+separate card, followed by a plain-English explanation and a list
+of ingredient recommendations. \Cref{fig:results1} shows the top
+half of the page (three cards + explanation); \Cref{fig:results2}
+shows the ingredient list and the educational note at the bottom.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\linewidth]{anazlysis1.png}
+    \caption{Results page, top half. Each model has its own card
+    with a per-model confidence bar. Skin Conditions is a
+    multi-label card that lists findings (here: one finding,
+    ``Blackheads'').}
+    \label{fig:results1}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\linewidth]{analisys2.png}
+    \caption{Results page, bottom half. The ingredient list is
+    grouped by ingredient category. The Educational Note collects
+    the plain-English notes from each rule that fired.}
+    \label{fig:results2}
+\end{figure}
+
+\section{History and progress tracking}
+
+The History page (\Cref{fig:history}) shows every past report the
+current user has saved, plotted on an acne-severity timeline and
+listed below in reverse chronological order. Two properties are
+worth flagging:
+
+\begin{itemize}
+    \item Each row is a link. Clicking a past report navigates
+        back to its full Results page --- the same recommendation
+        cards, ingredient list, and educational notes the user
+        saw the day the report was produced. Reports are
+        immutable on disk, so the past view is a faithful copy of
+        what was originally shown.
+    \item Each point on the chart is interactive. Hovering opens
+        a tooltip with the severity, model confidence, skin type,
+        and detected conditions for that timestamp
+        (\Cref{fig:history-tooltip}), which lets a returning user
+        track how their skin has changed over time.
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.75\linewidth]{history.png}
+    \caption{History page. The list of reports below the chart
+    is clickable --- each row leads back to the full recommendation
+    page for that historical report.}
+    \label{fig:history}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.55\linewidth]{history2.png}
+    \caption{Chart point tooltip on the History page.}
+    \label{fig:history-tooltip}
+\end{figure}
+
+\section{System architecture}
+
+\Cref{fig:architecture} shows the runtime architecture. Everything
+inside the dashed box runs inside a single FastAPI process, which
+we package into a Docker container for deployment. The React
+frontend is served from an nginx container. In production, both
+containers sit behind an nginx reverse proxy.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\linewidth]{tikz/architecture.pdf}
+    \caption{End-to-end runtime architecture of \cara.}
+    \label{fig:architecture}
+\end{figure}
+
+\section{Frontend}
+
+The frontend is a React 18 single-page application. There are six
+pages: \emph{Home} (landing page and disclaimer), \emph{Login} /
+\emph{Register}, \emph{Analyze} (upload and camera capture),
+\emph{Results} (the report), and \emph{History} (list of past
+reports for the current user). Styling is mobile-first because
+most casual selfies come from phones.
+
+We deliberately kept the frontend thin. It knows how to upload an
+image, poll for results, and render JSON. All logic --- including
+confidence bands and colour coding --- is driven by fields returned
+in the response payload. This makes it possible to iterate on the
+model side without redeploying the frontend.
+
+\section{Backend}
+
+The backend is a FastAPI application. FastAPI was chosen for three
+reasons: automatic OpenAPI schema generation (which makes the
+frontend integration typed and testable), Pydantic-based request
+validation (which rejects malformed inputs cheaply), and native
+async support.
+
+The main analysis endpoint is:
+
+\begin{lstlisting}[language=Python,caption={The main analysis endpoint (simplified).}]
+@router.post("/analyze", response_model=AnalyzeResponse)
+async def analyze(image: UploadFile = File(...),
+                  user: User = Depends(current_user)) -> AnalyzeResponse:
+    image_bytes = await image.read()
+    report = await analysis_service.analyze(image_bytes, user_id=user.id)
+    return AnalyzeResponse(report=report)
+\end{lstlisting}
+
+Authentication endpoints (\texttt{/auth/register},
+\texttt{/auth/login}) and read endpoints (\texttt{/report/\{id\}},
+\texttt{/reports}) sit next to it. Every read endpoint is scoped
+to the calling user's ID.
+
+\section{Storage}
+
+Reports are persisted as JSON files under a \texttt{storage/}
+directory. This is a deliberately boring choice: it keeps the demo
+runnable without any external database and it makes reports easy
+to inspect during debugging. Behind an abstract
+\texttt{StorageRepository} interface, we ship a second
+implementation for MongoDB (via Motor) that can be switched on
+with an environment variable. We validated the Mongo path in a
+dev container but the deployed demo uses JSON.
+
+\section{Deployment}
+
+The project ships with a \texttt{docker-compose.yml} that starts
+three containers: the FastAPI backend, the nginx-fronted React
+app, and a small nginx reverse proxy. Model weights are baked into
+the backend image at build time so that a container start does not
+depend on network access.
+
+%==============================================================================
+\chapter{Software Engineering, Testing, and MLOps}\label{ch:engineering}
+%==============================================================================
+
+A deep-learning project book usually devotes ninety per cent of its
+attention to the models. We resist that convention because, in the
+day-to-day life of \cara, the engineering scaffolding around the
+models mattered as much as the models themselves. This chapter
+documents the practice that let a small team iterate without
+breaking each other's work --- and, more importantly, without
+silently degrading model quality.
+
+\section{Repository layout}
+
+The repository is organised as a monorepo containing four
+cooperating subsystems:
+
+\begin{itemize}
+    \item \texttt{backend/} --- the FastAPI application, including
+        the analysis service, the BLP engine, the storage
+        repository, the report builder, and authentication.
+    \item \texttt{model\_service/} --- everything related to the
+        models: preprocessing pipeline, inference orchestrator,
+        training script, and the checkpoint folder (which is
+        git-ignored to keep the repository small).
+    \item \texttt{frontend/} --- the React SPA and its build
+        artefacts.
+    \item \texttt{shared/} --- Pydantic schemas and configuration
+        that is imported from both the backend and the model
+        service. Keeping the schemas in a single place prevents
+        drift between frontend expectations and backend responses.
+\end{itemize}
+
+Tests live in a top-level \texttt{tests/} folder rather than being
+scattered next to the code they exercise. This is a deliberate
+choice: it makes it easy to run the full suite as a gate, and it
+discourages the anti-pattern of ``I'll write the test later''.
+
+\section{Testing pyramid}
+
+The test suite has 65 tests distributed across six files, as
+summarised in \Cref{tab:tests}. Every file has a specific job.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Composition of the \cara test suite.}
+    \label{tab:tests}
+    \small
+    \begin{tabular}{lrp{7.2cm}}
+        \toprule
+        \textbf{File} & \textbf{Tests} & \textbf{What it verifies} \\
+        \midrule
+        \texttt{test\_blp.py}                 & 19 & BLP rule engine logic on single- and multi-label predictions, rule coverage lint, ingredient deduplication. \\
+        \texttt{test\_api.py}                 & 11 & API endpoints, request/response schema, error paths, auth. \\
+        \texttt{test\_integration.py}         &  8 & Component wiring, report assembly, storage round-trip. \\
+        \texttt{test\_model\_accuracy.py}     & 10 & Per-model accuracy on curated ground-truth images from the training folders. \\
+        \texttt{test\_e2e\_pipeline.py}       &  9 & Full image-to-report pipeline on real images. \\
+        \texttt{test\_real\_world\_regression.py} & 8 & Per-image + population-level + multi-label assertions on the held-out real-world set. \\
+        \midrule
+        \textbf{Total}                        & \textbf{65} & \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The last file --- \texttt{test\_real\_world\_regression.py} --- is
+the one that would have caught every regression we encountered in
+Phase 3, and did in fact catch two of them once we wrote it. It is
+the test file we would keep if we could keep only one.
+
+\subsection{Unit tests}
+The BLP tests are the fastest and the strictest. They lock down
+the behaviour of the rule engine on a matrix of representative
+inputs. Every time we edit the rules file, we also touch these
+tests. If a rule change accidentally silences a recommendation
+that used to fire, we find out within seconds.
+
+\subsection{Integration tests}
+Integration tests stub out the models with deterministic fake
+predictors and exercise the report builder, the storage layer, and
+the API contract. They run in a fraction of a second and catch
+schema-drift bugs before they reach the frontend.
+
+\subsection{Model accuracy tests}
+The model accuracy tests load specific labelled images from a
+small ground-truth folder inside the training set and assert that
+the corresponding model predicts the correct top-1 label. They
+form an in-distribution regression suite: a subtle bug that
+degrades accuracy on the training distribution will fail one of
+these tests. As Phase 3 taught us, they are not sufficient on
+their own --- but they are a good, fast first line of defence.
+
+\subsection{End-to-end tests}
+The end-to-end tests exercise the full pipeline: real photograph
+in, real report out. They also assert on the shape of the
+recommendation set, not just the model output, so they double as
+regression tests for the BLP engine.
+
+\subsection{Real-world regression tests}
+The regression tests are the piece we describe in detail in
+\Cref{sec:regression}. They are the specific tests that were red
+against the initial Phase-3 models and turned green one by one as
+each Phase-3 fix landed. Anyone merging a change to the model
+layer is expected to run them and paste the pass/fail summary in
+the pull request.
+
+\section{Debugging techniques we relied on}
+
+Three debugging patterns paid for themselves many times over.
+
+\begin{enumerate}
+    \item \textbf{Tensor shape assertions everywhere.} Every
+        function that receives a tensor asserts its expected shape
+        on entry. Silent shape bugs are the most vicious class of
+        deep-learning bug; a two-line assertion turns them into
+        loud failures.
+    \item \textbf{Deterministic fake models in tests.} The
+        \texttt{ModelRegistry} accepts a fake model in tests. That
+        lets us run the entire pipeline without the CNNs, which
+        speeds up the loop and pinpoints regressions in the
+        plumbing rather than in the models.
+    \item \textbf{Storage as a debugging surface.} Because every
+        report is a JSON file, reproducing a user report is a
+        one-liner: load the JSON, feed the image back through the
+        pipeline, compare. We used this to diagnose more than one
+        regression in the wild.
+\end{enumerate}
+
+\section{Configuration and secrets}
+
+Runtime configuration lives in \texttt{shared/config.py} (a
+\texttt{pydantic\_settings} model) and is populated from
+environment variables via \texttt{.env}. Sensitive values ---
+JWT secret, database credentials --- are provided by the
+environment, never committed to the repository. Every configuration
+knob is a knob a future maintainer must understand, so we keep the
+list short.
+
+\section{Checkpoint management}
+
+Training saves \emph{only} the best checkpoint by the validation
+metric (accuracy for single-label, macro-\(F_1\) for multi-label).
+There is no ``last'' checkpoint. This is a deliberate choice: it
+prevents the temptation to ship the last-epoch model, which is
+almost always slightly worse than the best-val-metric model but
+looks tempting because it is the last one on disk. Checkpoints
+live under \texttt{model\_service/checkpoints/} and are baked into
+the backend Docker image at build time.
+
+The training script also supports a \texttt{--resume} mode. That
+mode was introduced in Phase 3 so we could refine an existing
+checkpoint without paying the cost of a full retrain when we
+tweaked the negatives folder, augmentations, or the multi-label
+threshold. Iteration speed on Phase-3 experiments improved
+noticeably as a result.
+
+%==============================================================================
+\chapter{Discussion}\label{ch:discussion}
+%==============================================================================
+
+\section{Answers to the research questions}
+
+We opened the book with a short list of empirical questions. It
+is worth revisiting each of them with the evidence collected in
+the intervening chapters.
+
+\begin{description}
+    \item[Which backbone family generalises best on our data budget?]
+        On a fair Phase-2 bake-off with ImageNet-pretrained
+        initialisations on ACNE04, the ranking was clear: ResNet
+        \(\sim 55\,\%\), DenseNet \(\sim 62\,\%\), ViT
+        \(\sim 68\,\%\), \effnet \(73.1\,\%\). The most
+        credible explanation is not that \effnet is a smarter
+        architecture than a Vision Transformer, but that at our
+        dataset scale the strength of the pretrained weights
+        dominates: compound-scaled CNNs with a mature pretraining
+        recipe simply arrive at good features faster. On more data
+        or more compute the ranking might close, but on the
+        hardware we had \effnet was the correct pick.
+    \item[Independent classifiers vs shared-backbone multi-task.]
+        On our data budget the independent-classifier design won.
+        A shared backbone would have been pulled around by
+        whichever head had the loudest gradient at any moment,
+        making it very hard to attribute a real-world failure to
+        a specific sub-task. Splitting into three separate models
+        cost us a small amount of memory and latency, both
+        comfortably inside the budget, and gave us three cleanly
+        interpretable predictions.
+    \item[Softmax vs sigmoid + BCE for skin conditions.] The
+        reformulation was the single largest behavioural change
+        in Phase 3. Under softmax the skin-issues model
+        hallucinated at least one condition on every clean face;
+        under sigmoid + BCE, with a properly constructed negative
+        folder, the model can output the empty set, which is what
+        a clean face should trigger. Two population-level
+        regression tests flipped from red to green because of
+        this change alone.
+    \item[Do validation-split metrics predict shipped quality?]
+        No. Our initial Phase-3 skin-issues model scored around
+        98\,\% validation accuracy and could not predict
+        \texttt{healthy} on any real photograph. The follow-up
+        skin-conditions retrain \#1 scored a macro-\(F_1\) of
+        \(0.996\) and misfired \texttt{blackheads} on 7 of 11
+        real photographs. In both cases the validation number was
+        misleading in the same way: the test split shared the
+        training split's photographic style, so the model was
+        rewarded for memorising style rather than feature. The
+        regression suite --- per-image plus population-level, on
+        a distribution matched to production --- is the only
+        measure we now trust before shipping.
+    \item[Cross-task data reuse.] Yes, within limits. Adding
+        1{,}448 skin-type photographs as negatives for the
+        skin-conditions model closed most of the domain gap
+        without a fresh labelling effort. The visible cost was
+        \(0.015\) of training macro-\(F_1\); the visible gain
+        was the flip from 7 to 3 real-world failures out of 11
+        and the two population-level tests turning green. The
+        label noise from mis-selected negatives is real but
+        small.
+\end{description}
+
+\section{What the Phase-3 rework actually cost}
+
+None of the Phase-3 fixes involved a bigger backbone, a fancier
+optimiser, or a longer training run. The wins came from four
+places: (i) matching preprocessing at inference and training,
+(ii) rewriting one task as multi-label, (iii) reusing data across
+sub-models, and (iv) building a regression suite that measured
+the right distribution. In aggregate these interventions took
+substantially less compute than the initial Phase-2 training runs
+and produced a much better product. The general lesson is that on
+small, noisy datasets, data quality and evaluation design beat
+model complexity nearly every time.
+
+\section{Threats to validity}
+
+\begin{itemize}
+    \item \textbf{Dataset shift.} Our datasets skew toward young
+        adults and lighter Fitzpatrick skin types. Real users
+        will be more diverse. The regression suite already
+        surfaces this when we add a photograph the models are
+        not calibrated for; the honest response is to acknowledge
+        the limitation in the disclaimer rather than pretend it
+        does not exist.
+    \item \textbf{Label noise.} Even the anchor dataset (ACNE04)
+        has label disagreements between raters. Our accuracy
+        numbers are, at best, upper bounds on ``agreement with
+        the original labelling'', not on ``agreement with a
+        dermatologist''.
+    \item \textbf{Multi-label negatives.} The 1{,}448 skin-type
+        photographs used as auxiliary negatives contain some
+        genuine mild pores or blackheads that we now treat as
+        \([0, 0]\). This is unavoidable label noise; empirically
+        it is small enough that generalisation improves, but it
+        is not zero.
+    \item \textbf{Confidence calibration.} We do not currently
+        temperature-scale the softmax outputs. The confidence
+        gate at threshold \(0.30\) is deliberately generous.
+        Users should treat a confidence bar in the ``high''
+        range as ``very likely'', not ``certain''.
+    \item \textbf{Small regression set.} The real-world set is
+        11 photographs. It is enough to catch the specific
+        Phase-2 bugs and to detect a class-collapse failure, but
+        it is not enough to make fine-grained claims about
+        subgroup fairness. Extending it is high on the
+        future-work list (\Cref{ch:future}).
+\end{itemize}
+
+\section{Ethical considerations}
+
+An automated skin analyser sits close to sensitive territory.
+We mitigate the main risks in three ways:
+
+\begin{itemize}
+    \item The disclaimer on the landing page is unambiguous:
+        \cara is not a medical diagnostic tool.
+    \item The system refuses to render a confident label when the
+        model is not confident, precisely to avoid giving false
+        assurance about a skin condition that might warrant
+        professional attention.
+    \item No user photograph is retained beyond the report unless
+        the user explicitly requests to keep it. Reports
+        themselves contain no personally identifying information
+        beyond the user's own account ID.
+\end{itemize}
+
+%==============================================================================
+\chapter{Conclusions}\label{ch:conclusions}
+%==============================================================================
+
+We set out to build a web application that would deliver a
+truthful, useful, and explainable report on a user's facial skin
+from a single photograph, and we shipped one. The final system
+--- three independent \effnet classifiers behind a face-aware
+preprocessing pipeline, a multi-label skin-conditions model
+trained with cross-task negative anchors, and a deterministic
+rule engine on top --- is the product of three phases of work in
+which the largest single accelerator was almost never a new
+architecture. It was data quality, task framing, and evaluation
+design.
+
+The lessons we would carry into a next project:
+
+\begin{itemize}
+    \item Freeze the label spaces and audit the folders before
+        touching a training script. A mislabelled folder that
+        looks fine on a validation split is nearly invisible
+        until it hits real inputs.
+    \item Match preprocessing at training and inference from day
+        one. Dead code that claims to be shared is worse than no
+        code.
+    \item Pick the head shape (softmax vs sigmoid) from the
+        physics of the problem, not from habit. If the world
+        allows ``none'' or ``multiple'', BCE + sigmoid is the
+        honest choice.
+    \item Build a regression suite before you build a model. The
+        cost of doing so is one afternoon; the cost of not doing
+        so is a full rework.
+    \item Truthfulness is a design constraint that cuts across
+        every layer of the stack. The backend has to know how to
+        say ``I do not know''; the frontend has to know how to
+        render it; the rule engine has to know when to stop
+        firing rules. Any layer that hides uncertainty
+        invalidates the promise the other layers try to keep.
+\end{itemize}
+
+\cara is not the largest or the most accurate skin analyser in the
+world. Within the constraints we set ourselves --- a modest compute
+budget, no dermatologist on the team, an insistence that every
+recommendation be traceable --- it is a system we are willing to
+stand behind.
+
+%==============================================================================
+\chapter{Future Work}\label{ch:future}
+%==============================================================================
+
+If we had another semester, the following directions would be at
+the top of our list. They are ordered by expected impact per hour
+of effort.
+
+\section{Better data for the minority classes}
+
+The \emph{severe} acne class and the \emph{combination} skin-type
+class are both under-represented in our datasets. Curating a
+couple of hundred additional images per class --- ideally with
+dermatologist labels --- would probably lift the acne and skin-type
+accuracies more than any architectural change.
+
+\section{Ordinal regression for acne severity}
+
+Acne severity is inherently ordinal. Treating it as a categorical
+classification wastes information and produces most of the confusion
+between adjacent classes. Reformulating it as ordinal regression, or
+as label-distribution learning as in \cite{wu2019acne04}, is a
+promising path.
+
+\section{Attention-based visualisation}
+
+Users would benefit from an explanation such as ``the model is
+looking at your left cheek''. A Grad-CAM overlay or attention map
+would be inexpensive to add and would substantially strengthen
+the truthfulness story.
+
+\section{On-device inference}
+
+Running three \effnet models sequentially is fast enough on a
+desktop or laptop but not always fast enough on a low-end phone.
+Converting the models to ONNX and then to a mobile runtime (e.g.\
+ONNX Runtime Mobile or Core ML) is a natural next step.
+
+\section{Larger regression set with diverse skin tones}
+
+Our real-world regression set is small (11 photographs). Extending
+it to a few hundred, deliberately balanced across Fitzpatrick
+skin tones, would let us measure fairness properly and would
+almost certainly reveal new failure modes to fix.
+
+\section{Formal dermatologist review of the rules}
+
+Our BLP rules are grounded in publicly available skincare
+knowledge, but they have not been reviewed by a dermatologist as a
+coherent product. A formal review would let us sharpen the rules
+file and would open the door to eventual regulatory review if the
+project ever became commercial.
+
+%==============================================================================
+%  BIBLIOGRAPHY
+%==============================================================================
+\begin{thebibliography}{99}
+
+\bibitem{lecun1998gradient}
+Y.~LeCun, L.~Bottou, Y.~Bengio, and P.~Haffner.
+\newblock ``Gradient-based learning applied to document recognition''.
+\newblock \emph{Proceedings of the IEEE}, 86(11):2278--2324, 1998.
+
+\bibitem{krizhevsky2012alexnet}
+A.~Krizhevsky, I.~Sutskever, and G.~Hinton.
+\newblock ``ImageNet classification with deep convolutional neural networks''.
+\newblock In \emph{NeurIPS}, 2012.
+
+\bibitem{simonyan2015vgg}
+K.~Simonyan and A.~Zisserman.
+\newblock ``Very deep convolutional networks for large-scale image recognition''.
+\newblock In \emph{ICLR}, 2015.
+
+\bibitem{szegedy2015going}
+C.~Szegedy et al.
+\newblock ``Going deeper with convolutions''.
+\newblock In \emph{CVPR}, 2015.
+
+\bibitem{he2016deep}
+K.~He, X.~Zhang, S.~Ren, and J.~Sun.
+\newblock ``Deep residual learning for image recognition''.
+\newblock In \emph{CVPR}, 2016.
+
+\bibitem{huang2017densely}
+G.~Huang, Z.~Liu, L.~van~der~Maaten, and K.~Q.~Weinberger.
+\newblock ``Densely connected convolutional networks''.
+\newblock In \emph{CVPR}, 2017.
+
+\bibitem{dosovitskiy2021vit}
+A.~Dosovitskiy et al.
+\newblock ``An image is worth 16x16 words: Transformers for image recognition at scale''.
+\newblock In \emph{ICLR}, 2021.
+
+\bibitem{xie2017aggregated}
+S.~Xie, R.~Girshick, P.~Doll\'ar, Z.~Tu, and K.~He.
+\newblock ``Aggregated residual transformations for deep neural networks''.
+\newblock In \emph{CVPR}, 2017.
+
+\bibitem{tan2019efficientnet}
+M.~Tan and Q.~Le.
+\newblock ``EfficientNet: Rethinking model scaling for convolutional neural networks''.
+\newblock In \emph{ICML}, 2019.
+
+\bibitem{deng2009imagenet}
+J.~Deng, W.~Dong, R.~Socher, L.-J.~Li, K.~Li, and L.~Fei-Fei.
+\newblock ``ImageNet: A large-scale hierarchical image database''.
+\newblock In \emph{CVPR}, 2009.
+
+\bibitem{yosinski2014transferable}
+J.~Yosinski, J.~Clune, Y.~Bengio, and H.~Lipson.
+\newblock ``How transferable are features in deep neural networks?''.
+\newblock In \emph{NeurIPS}, 2014.
+
+\bibitem{loshchilov2019adamw}
+I.~Loshchilov and F.~Hutter.
+\newblock ``Decoupled weight decay regularization''.
+\newblock In \emph{ICLR}, 2019.
+
+\bibitem{esteva2017dermatologist}
+A.~Esteva et al.
+\newblock ``Dermatologist-level classification of skin cancer with deep neural networks''.
+\newblock \emph{Nature}, 542:115--118, 2017.
+
+\bibitem{wu2019acne04}
+X.~Wu et al.
+\newblock ``Joint acne image grading and counting via label distribution learning''.
+\newblock In \emph{ICCV}, 2019.
+
+\bibitem{tschandl2018ham10000}
+P.~Tschandl, C.~Rosendahl, and H.~Kittler.
+\newblock ``The HAM10000 dataset''.
+\newblock \emph{Scientific Data}, 5:180161, 2018.
+
+\bibitem{groh2021fitzpatrick}
+M.~Groh et al.
+\newblock ``Evaluating deep neural networks trained on clinical images in dermatology
+with the Fitzpatrick 17k dataset''.
+\newblock In \emph{CVPR Workshops}, 2021.
+
+\bibitem{ioffe2015batchnorm}
+S.~Ioffe and C.~Szegedy.
+\newblock ``Batch normalization: Accelerating deep network training by reducing internal covariate shift''.
+\newblock In \emph{ICML}, 2015.
+
+\bibitem{rajpurkar2017chexnet}
+P.~Rajpurkar, J.~Irvin, K.~Zhu, et al.
+\newblock ``CheXNet: Radiologist-level pneumonia detection on chest X-rays with deep learning''.
+\newblock \emph{arXiv:1711.05225}, 2017.
+
+\end{thebibliography}
+
+%==============================================================================
+%  APPENDICES
+%==============================================================================
+\appendix
+
+\chapter{API reference}\label{app:api}
+
+The backend exposes a small REST API. The main endpoints are listed
+below; the full OpenAPI schema is auto-generated by FastAPI and
+available at \texttt{/docs} in a running instance.
+
+\begin{longtable}{@{}p{4.4cm}p{1.7cm}p{7.6cm}@{}}
+    \toprule
+    \textbf{Endpoint} & \textbf{Method} & \textbf{Description} \\
+    \midrule
+    \endhead
+    \texttt{/auth/register}      & POST & Register a new user account (email + password). Returns a token or an error code. \\
+    \texttt{/auth/login}         & POST & Log in and receive a JWT. \\
+    \texttt{/api/analyze}        & POST & Accepts a multipart image upload and returns a full \texttt{AnalysisReport} scoped to the authenticated user. \\
+    \texttt{/api/reports}        & GET  & Lists persisted reports for the authenticated user, most-recent first. \\
+    \texttt{/api/report/\{id\}}  & GET  & Returns a specific persisted report by ID. \\
+    \bottomrule
+\end{longtable}
+
+\chapter{Report schema}
+
+The schema below (abridged) is the shape of the JSON returned by
+\texttt{/api/analyze}. It is defined as Pydantic models in
+\texttt{shared/schemas.py} and serialised on demand.
+
+\begin{lstlisting}[language=Python,caption={AnalysisReport (abridged).}]
+class ModelPrediction(BaseModel):
+    model_name: str
+    predicted_class: int
+    predicted_label: str
+    confidence: float          # 0..1
+    all_probabilities: List[float]
+
+class SkinConditionFinding(BaseModel):
+    label: SkinCondition       # "pores" | "blackheads"
+    confidence: float
+
+class MultiLabelPrediction(BaseModel):
+    findings: List[SkinConditionFinding]   # empty = no notable conditions
+
+class AnalysisReport(BaseModel):
+    id: str
+    created_at: datetime
+    user_id: str
+    acne_prediction: ModelPrediction
+    skin_type_prediction: ModelPrediction
+    skin_conditions_prediction: MultiLabelPrediction
+    recommendations: List[Recommendation]
+    explanation: str
+    educational_notes: List[str]
+    status: AnalysisStatus     # "success" | "low_confidence" | "no_face_detected"
+\end{lstlisting}
+
+\chapter{Ingredient reference}
+
+The BLP engine draws from a curated vocabulary of skincare
+ingredients. \Cref{tab:ingredients} summarises the most
+frequently used ones and the situations in which they are
+recommended. This table is a reader's reference; the canonical
+source of truth is \texttt{backend/blp/rules.json}.
+
+\begin{longtable}{@{}p{3.9cm}p{4.3cm}p{5.7cm}@{}}
+    \toprule
+    \textbf{Ingredient} & \textbf{Typical recommendation} & \textbf{Rationale} \\
+    \midrule
+    \endfirsthead
+    \toprule
+    \textbf{Ingredient} & \textbf{Typical recommendation} & \textbf{Rationale} \\
+    \midrule
+    \endhead
+    Salicylic acid (BHA)      & Mild-to-moderate acne, oily skin, enlarged pores, blackheads & Oil-soluble; penetrates sebum and clears pores. \\
+    Benzoyl peroxide          & Moderate-to-severe acne, spot treatment          & Antibacterial against \emph{C.\ acnes}; can be irritating. \\
+    Niacinamide               & Oily skin, redness, pores, dark spots            & Reduces sebum output and inflammation; well tolerated. \\
+    Hyaluronic acid           & Dry or dehydrated skin, wrinkles                 & Humectant; binds water in the stratum corneum. \\
+    Ceramides                 & Dry or compromised skin barrier                  & Rebuild the lipid bilayer of the stratum corneum. \\
+    Retinol / retinoids       & Wrinkles, uneven texture, non-inflammatory acne, pores & Accelerate cell turnover; contraindicated in pregnancy. \\
+    Azelaic acid              & Dark spots, sensitive-skin acne                  & Anti-inflammatory and mild pigment-inhibiting. \\
+    Vitamin C (L-ascorbic)    & Dark spots, normal skin maintenance              & Antioxidant; brightens hyperpigmentation. \\
+    Alpha arbutin             & Dark spots, hyperpigmentation                    & Gentle brightening agent. \\
+    Peptide complex           & Wrinkles                                          & Signals skin to produce more collagen and elastin. \\
+    Clay mask (weekly)        & Oily skin                                        & Absorbs excess oil and deep-cleans pores. \\
+    Oil cleansing             & Blackheads                                       & Dissolves sebum plugs without irritation. \\
+    SPF 30--50 sunscreen      & Every rule that recommends actives               & Non-negotiable for anyone using retinoids or acids. \\
+    \bottomrule
+    \caption{Frequently used ingredients in the \cara recommendation
+    vocabulary.}\label{tab:ingredients}
+\end{longtable}
+
+\chapter{Glossary}
+
+\begin{description}
+    \item[BCE] Binary Cross-Entropy loss --- the loss function of a
+        multi-label classifier with sigmoid outputs.
+    \item[BLP] Business Logic Processing --- our internal name for
+        the rule engine that converts model predictions into
+        recommendations.
+    \item[EfficientNet] A family of convolutional backbones that
+        jointly scale depth, width, and input resolution. We use
+        the smallest member, EfficientNet-B0.
+    \item[EXIF orientation] Metadata attached by phone cameras
+        recording how the sensor was oriented when the shot was
+        taken. Ignored by \texttt{cv2.imdecode}, respected by
+        PIL's \texttt{ImageOps.exif\_transpose}. See
+        \Cref{sec:rotation}.
+    \item[Grad-CAM] Gradient-weighted Class Activation Mapping ---
+        a technique for visualising which pixels contributed to a
+        prediction. Referenced in Future Work.
+    \item[Haar cascade] The classical OpenCV object detector.
+        Fast, upright-frontal only. We supplement it with a
+        rotation retry.
+    \item[Macro-\(F_1\)] The unweighted mean of per-class \(F_1\)
+        scores. The default metric for our multi-label
+        skin-conditions model.
+    \item[MediaPipe] A Google library for real-time perception
+        tasks including face detection. Considered as an
+        alternative to Haar.
+    \item[Multi-label classification] The setting in which the
+        model may output any subset of \(K\) classes for a given
+        input, including the empty set. Implemented with
+        independent sigmoids and BCE loss.
+    \item[ONNX] Open Neural Network Exchange --- a portable
+        interchange format for trained models. Referenced in
+        Future Work.
+    \item[Softmax] The final normalisation function of a
+        classification head; converts logits to a probability
+        distribution over mutually exclusive classes.
+    \item[Transfer learning] Initialising a network with weights
+        pretrained on a large dataset (ImageNet in our case) and
+        fine-tuning it on the target task.
+    \item[Two-stage training] Our recipe: train the head with the
+        backbone frozen, then unfreeze the upper backbone blocks
+        with a lower learning rate.
+    \item[Uncertain (report field)] The state in which the
+        frontend replaces a predicted label with a neutral message
+        because the model's confidence was below the per-model
+        floor.
+\end{description}
+
+\end{document}
+
+
+

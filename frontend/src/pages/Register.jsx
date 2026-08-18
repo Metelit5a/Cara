@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { registerUser, loginUser } from '../api';
 
 const API_BASE = process.env.REACT_APP_API_BASE || '/api/v1';
 
 function Register({ authValue }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = location.state?.from?.pathname || '/';
   const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -42,9 +45,8 @@ function Register({ authValue }) {
       if (!loginResponse.ok) {
         throw new Error(loginData.detail || 'Login failed');
       }
-
       authValue.login(loginData.access_token, formData.username);
-      navigate('/');
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(err.message || 'Unexpected error');
     } finally {
@@ -105,7 +107,8 @@ function Register({ authValue }) {
       </form>
 
       <p className="auth-link-row">
-        Already have an account? <Link to="/login">Log in</Link>
+        Already have an account?{' '}
+        <Link to="/login" state={location.state}>Log in</Link>
       </p>
     </div>
   );

@@ -1,0 +1,333 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{tabularx}
+
+\title{\textbf{Cara} \\ \Large Final Project Definition}
+\author{\textbf{By:} \\ Sarit Metelitsa \\ Ronen Metelitsa \\ Noa Shaanan \\ Elyasaf Namir}
+\date{}
+
+\begin{document}
+\maketitle
+\begin{center}
+\textbf{Supervisor:} Dr. Raz Lin \\
+\textbf{Git:} \url{https://github.com/Metelit5a/Cara}
+\end{center}
+
+\section{Project description}
+Cara is an intelligent, AI-powered skincare analysis system designed to provide users with personalized insights about their skin condition.
+
+The system analyzes a user's facial image using a deep learning model and produces an assessment of various skin attributes, such as dryness, oiliness, acne severity, pore visibility, blackheads, redness, and early signs of aging.
+
+Based on the analysis, Cara recommends skincare ingredients, not specific commercial products, tailored to the user's needs. (e.g. salicylic acid, niacinamide, hyaluronic acid, retinol).
+
+Additionally, Cara includes advanced features such as long-term skin tracking and routine effectiveness monitoring. The long-term tracking feature allows users to save their past analyses and compare how their skin changes over weeks or months.
+
+By visualizing trends in dryness, acne levels, or redness, Cara helps users understand whether their skincare routine is improving their skin or if new issues are emerging.
+
+Tracking also enables early detection of patterns such as seasonal dryness or recurring acne cycles. This feature transforms Cara from a one-time diagnostic tool into a continuous personal skincare companion, empowering users with actionable insights over time.
+
+\section{Related Work}
+Several commercial and academic solutions exist in the domain of automated skincare analysis. Popular consumer apps such as Perfectcorp, HiMirror and Haut.ai apply computer vision techniques to detect skin concerns or evaluate overall skin health. These solutions vary significantly in accuracy, transparency, and user focus. While they provide convenient assessments, many rely on algorithms and do not clearly disclose the underlying model architecture or training data. Most existing apps deliver product-centered recommendations to maximize their profits, directing users toward commercial skincare items, rather than providing ingredient-level guidance.
+
+Major skincare brands have also introduced AI-driven analysis tools, including systems created by La Roche-Posay, Cetaphil, Neutrogena, and Olay. These brand-specific solutions typically use image analysis to evaluate concerns such as acne, dryness, or sensitivity. However, their primary goal is often marketing-driven: the analysis results are designed to promote the company's own products and are not independent or ingredient-focused. These tools rarely offer transparent explanations of their models or provide ongoing monitoring of skin changes over time.
+
+In parallel, academic research in dermatological imaging has made significant progress using deep learning, particularly through publicly available datasets such as HAM10000, DermNet, and ACNE04. Models trained on these datasets, including CNNs and segmentation networks, demonstrate high performance in medical skin-condition classification. However, these works primarily address clinical diagnosis (e.g., melanoma detection, lesion classification) and are not intended for everyday cosmetic skincare assessment. As a result, they lack the consumer-friendly interpretability and non-medical recommendations required for a lifestyle-oriented system.
+
+Cara aims to fill the gap between medical-grade research and commercial marketing tools. Unlike brand-specific applications, Cara is independent, transparent, and ingredient-based, focusing on scientifically supported skincare active ingredients rather than commercial products. Unlike academic tools, Cara is accessible to everyday users and avoids medical diagnoses, focusing instead on cosmetic concerns such as dryness, oiliness, acne severity, blackheads, and fine lines. Additionally, Cara introduces features rarely offered by existing platforms, such as long-term skin tracking, routine effectiveness monitoring, and explainable visualizations. These capabilities position Cara as a comprehensive, user-oriented skincare companion rather than a marketing tool or medical diagnostic system.
+
+\section{Functional Description / Requirements}
+Cara provides automated skincare analysis based on a single uploaded face image. The core functionality is built around a deep learning model trained to evaluate multiple skin attributes simultaneously.
+
+\subsection{Functional Requirements}
+\textbf{Core Features}
+\begin{itemize}
+    \item Upload a facial image.
+    \item Detect and isolate the face region.
+    \item Analyze skin condition across multiple attributes:
+    \begin{itemize}
+        \item dryness / dehydration
+        \item oiliness
+        \item acne severity
+        \item blackheads
+        \item pore visibility
+        \item redness
+        \item fine lines / wrinkles
+    \end{itemize}
+    \item Generate a personalized list of recommended skincare ingredients.
+    \item Display results clearly, visually, and with explanations.
+\end{itemize}
+
+\textbf{Advanced Features}
+\begin{itemize}
+    \item Skin Progress Tracking: store previous analyses and compare changes over time using graphs.
+    \item Routine Effectiveness Feedback: users report improvement/no change/worse $\rightarrow$ model adapts recommendations.
+    \item Current Recommended routine: display the list of recommended Ingredients, for the user to come back to at any time.
+\end{itemize}
+
+\section{Architecture}
+\textit{[Cara System Architecture Image Placeholder]}
+
+\subsection{Each Module description}
+\subsubsection{Client-Side Application (Mobile/Web App)}
+\textbf{Responsibility:} Handles the user interface (UI), user experience (UX), and interaction.\\
+\textbf{Sub-modules:}
+\begin{itemize}
+    \item User Interface (UI): Provides screens for image upload, displaying analysis results, viewing tracking graphs, and showing the current recommended routine.
+    \item Image Uploader: Captures images via camera or uploads from the gallery, and sends the image data to the Server-Side Backend.
+    \item Local Data Manager: Manages local session data and user preferences.
+\end{itemize}
+
+\subsubsection{Server-Side Backend (Application Server)}
+\textbf{Responsibility:} Acts as the central hub, managing API endpoints, business logic, user sessions, and coordinating data flow between the Client, ML Service, and Database.\\
+\textbf{Sub-modules:}
+\begin{itemize}
+    \item API Gateway: Handles all incoming requests from the Client and routes them to the appropriate service.
+    \item Authentication \& User Management: Manages user login, registration, and session tokens.
+    \item Business Logic Processor: Translates raw ML output into user-friendly assessments and generates final ingredient recommendations based on the analysis and stored ingredient knowledge. Using the data saved in the DB's Ingredient Knowledge Base - it will use an algorithm to determine what products to recommend that don't clash, and are the most compatible with all of the skin conditions the user has.
+\end{itemize}
+
+\subsubsection{Deep Learning (ML) Service}
+\textbf{Responsibility:} Houses the core image analysis model and performs the skin assessment.\\
+\textbf{Sub-modules:}
+\begin{itemize}
+    \item Image Pre-processor: By using an external tool that will guide the user on how to position their face in the camera, optimize for factors like brightness, and ensure proper image capture quality. If we cannot find a suitable tool, we will explore other methods to implement alignment or normalization ourselves.
+    \item Deep Learning Model: The trained Convolutional Neural Network responsible for analyzing the face image and outputting metrics for dryness, acne, oiliness, etc.
+    \item Prediction Post-processor: Converts the raw model output scores into categorical severity levels (e.g., Low, Medium, High).
+\end{itemize}
+
+\subsubsection{Database (DB)}
+\textbf{Responsibility:} Persistent storage for all system data.\\
+\textbf{Sub-modules:}
+\begin{itemize}
+    \item User Data Store: Stores user profiles and authentication details.
+    \item Analysis History Store: Stores all past skin analysis results for each user to enable the Skin Progress Tracking feature.
+    \item Ingredient Knowledge Base:
+    \begin{itemize}
+        \item Data structure of skincare ingredients and their functions,
+        \item Data structure of relations between ingredients (positive / negative),
+        \item Data structure that contains the relations between ingredients and skin conditions (positive / negative)
+    \end{itemize}
+\end{itemize}
+
+\section{Work plan}
+The table below lists the project Epics in chronological order. Closer to the implementation phase, each of these high-level Milestones will be divided into smaller, focused tasks and evenly distributed among team members to ensure participation in all key features.
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\textbf{Milestone Name} & \textbf{Timeframe} & \textbf{Key Things We Will Finish (Focus on ML)} \\
+\hline
+System Foundation and Infrastructure & 1.5 Months (01.01.26 - 15.02.26) & \textbf{Final Design:} Finish all details for the Business Logic Process (BLP) and Image Pre-processor (See below). \textbf{Database:} Finish the plan for the data and put in the first ingredient rules. \textbf{ML Service:} Finish the Image Pre-processor. This includes the external face lock tool. \textbf{Backend:} Finish the user login and management parts. \\
+\hline
+Core Analysis and Model Finalization (POC) & 1.5 Months (16.02.26 - 01.04.26) & \textbf{ML Model Fork:} All team members will develop separate, competing variations of the Deep Learning model (different architectures, loss functions, training approaches) for skin attribute scoring. \textbf{Model Selection (POC):} Pick the best model and do a Proof of Concept (POC) test with separate skin data to set the first score (Baseline) for F1-Score/mAP. \textbf{Loss Function:} Implements a function that calculates the score for the model based on various performance metrics, which may include accuracy, precision, recall, and F1 score. \textbf{Backend (BLP Start):} Start the Business Logic Processor to read the ML scores and use a small set of rules to give the first ingredient suggestions. \textbf{Client:} Core UI for image submission and static results display. \\
+\hline
+Advanced Features and Deployment & 2 Months (01.04.26 - 01.06.26) & \textbf{Advanced Client-Side:} Build the screens for the Skin Progress Tracking (graphs) and the Routine Effectiveness Feedback. \textbf{Advanced Backend/DB:} Finish all parts that save history and update routines. Add more advanced rules to the BLP. \textbf{Documentation:} Finalization of all technical documentation (API specification, References). \textbf{Testing:} Test the whole system completely. \textbf{Model Improvements:} upcoming improvements from the POC part. \textbf{Deployment:} Get the final system ready for users. \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Client side}
+\subsection{Usage Illustration}
+\begin{enumerate}
+    \item \textbf{Login / Register}
+    \begin{itemize}
+        \item Login: The user opens the app and enters their registered email and password on the login screen.
+        \item New Users: A 'Create an Account' link is available for new registration.
+        \item Outcome: The user is taken directly to the Home Screen.
+    \end{itemize}
+    \item \textbf{Core Skin Analysis}
+    \begin{itemize}
+        \item Initiation: From the Home Screen, the user taps the camera icon.
+        \item Image \& Quality Check: The user captures a new photo or uploads one from their gallery. The app implements a Face Lock Mechanism to validate image quality (proper lighting, full-face visibility, adequate distance, not pixelated) based on the standards required by the ML model. The app will prompt the user to retake or re-upload the photo if the quality is insufficient.
+        \item Processing \& Results: The photo is processed by the AI model. The user is then directed to the Analysis Results Screen.
+        \item Output: This screen displays the analysis, clear severity metrics (e.g., "Dryness: Low"), and a personalized card with a list of recommended active skincare ingredients.
+    \end{itemize}
+    \item \textbf{Routine Management}
+    \begin{itemize}
+        \item Dashboard: The Home Screen features a section titled 'Your Daily Essentials.'
+        \item Routine: This section shows the user's current recommended ingredients/products. Users can tap items on this list to quickly confirm they have completed that part of their daily routine.
+        \item Review: The users can share their current skin state, when selecting an answer a popup will show where they can fill in more details.
+    \end{itemize}
+    \item \textbf{Progress Tracking}
+    \begin{itemize}
+        \item Graphs: By selecting a specific skin attribute (like "Acne Level"). A dynamic line graph appears, charting their historical scores for that attribute over weeks or months to show improvement or decline.
+        \item Review: A log below the graph allows them to scroll through details of past analysis dates.
+    \end{itemize}
+    \item \textbf{Profile and Settings}
+    \begin{itemize}
+        \item Management: Users can view their logged-in information, manage app preferences - notifications or display mode, and log-out of their session.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Mockup}
+\textit{[UI Mockup Images Placeholder]}
+
+\subsection{Product Behavior and Result Presentation}
+This section outlines key design decisions regarding user communication and instruction delivery:
+\begin{itemize}
+    \item \textbf{Result Presentation:} The system will ensure all analysis results are coherent, normalized, and intuitive. Raw model outputs for instance, a score of 0.16, will be converted into user-friendly, categorical assessments such as, "no acne issue," "light acne issue", based on the predetermined thresholds and rule-based logic from the Business Logic Processor.
+    \item \textbf{Localized Ingredient Instructions:} As the initial model (Priority 0) does not include Skin Segmentation (Priority 2), we have two main options for the instructions for ingredients that treat localized issues:
+    \begin{itemize}
+        \item Option A: Avoid recommending spot-specific ingredients in the initial version.
+        \item Option B: Use generic, actionable instructions for localized ingredients, like "apply this product on acne spots", until skin segmentation is integrated.
+    \end{itemize}
+\end{itemize}
+
+\section{Server Side}
+The Server-Side Backend is the system's central hub, responsible for managing application logic, user data, and the core ingredient recommendation engine. The core architectural components are the Application Server (managing business logic and APIs) and the Database (persistent data storage). The process for generating the final ingredient recommendation list is a crucial server-side step managed by the Business Logic Processor.
+
+\subsection{API Specification}
+Key API Endpoints and Functionality:
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{|l|l|X|l|}
+\hline
+\textbf{Endpoint (Conceptual)} & \textbf{Method} & \textbf{Description} & \textbf{Data Handled} \\
+\hline
+/api/auth/register & POST & Manages user account creation and initial profile setup. & User Credentials, Profile Data \\
+\hline
+/api/auth/login & POST & Authenticates users and returns a session token for securing subsequent requests. & User Credentials, Session Token \\
+\hline
+/api/analyze & POST & Core Analysis Request. Accepts an image file from the client. Routes the image to the Deep Learning (ML) Service, processes the results, and returns the final assessment and recommendations. & Image Data, Analysis ID \\
+\hline
+/api/recommendation & GET & Fetches the user's most current, recommended ingredient routine. & Ingredient List, Active Routine Status \\
+\hline
+/api/history & GET & Retrieves a user's chronological skin analysis history for progress tracking visualization. & Historical Analysis Data \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{The Role of the Business Logic Processor in Recommendations}
+The final, personalized list of recommended ingredients is generated server-side in the Business Logic Processor sub-module. This decision ensures the recommendations are consistent, and based on the centralized Ingredient Knowledge Base (stored in the Database).
+
+\subsubsection{Rule-based Domain Knowledge:}
+It is critical to highlight that the treatment recommendations are decided through rule-based logic informed by domain research, not by the machine learning model alone. The ML Service provides raw data (skin condition scores), but the final, actionable recommendation is generated by applying established dermatological principles encoded as rules in the Business Logic Processor.
+
+\subsubsection{Process Flow for Ingredient Recommendations:}
+\begin{enumerate}
+    \item The Deep Learning (ML) Service returns raw metrics (scores) for multiple skin conditions (e.g., dryness severity: 0.85, acne level: 0.60) to the Server-Side Backend.
+    \item The Business Logic Processor receives these scores and translates them into user-friendly categorical assessments (e.g., "High Dryness," "Moderate Acne").
+    \item The Processor then queries the Database's Ingredient Knowledge Base, which contains:
+    \begin{itemize}
+        \item Functions of each active ingredient.
+        \item Known positive and negative relations between ingredients (to prevent clashing).
+        \item Relations between ingredients and specific skin conditions (e.g., Salicylic Acid is positive for Acne).
+    \end{itemize}
+    \item An internal algorithm executes to determine the optimal, non-clashing set of ingredients that is most compatible with the user's current combination of skin conditions. Specific rules will be defined based on dermatology best practices and an algorithm for ingredient matching will be created that uses the Database's Ingredient Knowledge Base to ensure compatibility and effectiveness. This algorithm will determine the optimal, non-clashing set of ingredients for the user's combination of skin conditions.
+    \item The final, tailored ingredient list is sent back to the Client-Side Application for display to the user.
+\end{enumerate}
+
+\section{Model}
+This section outlines the deep learning aspects of the Cara system, covering the datasets, model architecture exploration, and key implementation decisions.
+
+\subsection{Data Strategy and Preprocessing}
+The model will be trained using a combination of publicly available datasets to cover a broad range of skin attributes.
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{|l|l|X|X|}
+\hline
+\textbf{Dataset} & \textbf{Approx. Size} & \textbf{Key Classes/Tags} & \textbf{Use Case} \\
+\hline
+ACNE04 & 1,000+ pictures & Pimples, black/white heads & Acne identification and severity estimation. \\
+\hline
+Fitzpatrick 17k & 17,000+ facial pictures & 100+ skin conditions, 6 skin types & Skin type classification and general condition identification. \\
+\hline
+CelebA & 200,000+ facial pictures & 40+ facial features (wrinkles, large pores, oily skin) & Identification of various skin features in a single image. \\
+\hline
+HAM10000/DermNet & 20,000+ pictures & 20+ skin condition diagnoses & Enhancement of spot and redness detection, non-medical context. \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Data Processing and Fairness Considerations:}
+\begin{itemize}
+    \item \textbf{Dataset-Specific Image Preprocessing:} Essential transformations for image standardization: normalization (pixel value adjustment), scaling (image resizing), and other necessary adjustments for compatibility and consistency across all data sources. The core analysis will aim for a single image input, with initial pre-processing including tools for quality validation.
+    \item \textbf{Dataset-Specific Post-processing:} Before being sent to the Backend, the final output must be unified. This involves aligning and coordinating the individual outputs from each single-task model (or the output from the multitask model) into a cohesive, singular result.
+    \item \textbf{Output Normalization \& Fairness Adjustments:} Normalizing model outputs to provide meaningful, human-readable interpretations (e.g., converting a 0.16 acne score into ``moderate acne''). Considering demographic biases (e.g., darker skin types potentially scoring lower for acne) and applying rule-based corrections where justified to ensure fairness.
+    \item \textbf{Severity Tags:} Severity tags exist for Acne, and thresholds will be used to assign severity levels (Low, Medium, High) for all other skin conditions.
+    \item \textbf{Progress Tracking:} comparisons and long-term progress evaluations will rely on stored metadata (analysis scores/assessments) rather than direct image comparisons—this is not a deep learning feature. This could be another deep learning feature, but not at priority 0 (see section 8.4).
+\end{itemize}
+
+\subsection{Model Architectures and Exploration}
+The project will explore different Convolutional Neural Network (CNN) architectures to find the optimal balance between accuracy and inference speed.
+\begin{itemize}
+    \item \textbf{Baseline:} A standard CNN will be implemented as a baseline model.
+    \item \textbf{Architectures to Explore:} We will conduct Fine-tuning and compare EfficientNet with Vision Transformer (ViT) models for skin attribute scoring.
+    \item \textbf{Model Strategy:} We will Explore Multitask Learning (MTL) vs. multiple single-task models to determine the most effective approach for analyzing multiple skin attributes simultaneously.
+\end{itemize}
+
+\subsection{Model Evaluation \& Success Metrics}
+\subsubsection{Evaluation Metrics}
+\textbf{Classification Tasks (skin type, severity level):}
+\begin{itemize}
+    \item F1-Score: Primary metric for balanced assessment of precision and recall, especially important for imbalanced classes (like rare skin conditions).
+    \item Macro-Averaged Accuracy: To ensure performance is not skewed by dominant classes.
+\end{itemize}
+\textbf{Regression Tasks (raw score for dryness, oiliness):}
+\begin{itemize}
+    \item Mean Absolute Error (MAE): To measure the average magnitude of the errors in a set of predictions.
+\end{itemize}
+\textbf{Multi-label Prediction (multiple attributes simultaneously):}
+\begin{itemize}
+    \item Mean Average Precision (mAP): Across all skin attributes to assess the overall quality of multi-task performance.
+\end{itemize}
+
+\subsubsection{Proving Model Quality}
+Describing the methodology to verify model performance, ensuring robustness and fairness:
+\begin{itemize}
+    \item \textbf{Validation Methodology:} Performance will be rigorously assessed using k-fold cross-validation on the combined training dataset to maximize data utilization and test robustness.
+    \item \textbf{Cross-Dataset Comparisons:} Final models will be evaluated against external, held-out datasets (separate from training and validation sets) to verify generalizability and real-world applicability.
+    \item \textbf{Fairness Checks:} Model performance will be specifically evaluated across demographic sub-groups (by using different Fitzpatrick skin types) to identify and mitigate any demographic biases, ensuring equitable assessment for all users.
+\end{itemize}
+
+\subsection{Feature Prioritization}
+Core Focus: Prioritize diagnosis (Core Skin Analysis) over tracking (Skin Progress Tracking) in the initial stages of development to ensure the core deep learning model is robust before building advanced features.
+\begin{itemize}
+    \item \textbf{Priority 0 (Must-Have):} Core Functionality - Facial skin image diagnosis/analysis.
+    \item \textbf{Priority 1 (High Priority):} Advanced Feature - Skin Progress Tracking - storing analysis history, providing long-term visualization.
+    \item \textbf{Priority 2 (Nice-to-Have):} Future Enhancement - Skin Segmentation - highlight sections of the face and differentiate between them for localized treatment recommendations.
+\end{itemize}
+
+\section{Key Challenges and Risks}
+This section outlines the primary technical, data, and architectural challenges anticipated during the development of the Cara system, along with key assumptions that inform the current design.
+
+\subsection{Technical \& Modeling Challenges}
+\begin{itemize}
+    \item \textbf{Data Compatibility and Consistency:}\\ \textbf{Challenge:} The model is trained on a combination of diverse publicly available datasets (ACNE04, Fitzpatrick 17k, CelebA, HAM10000/DermNet). Ensuring consistent image preprocessing (normalization, scaling) across these sources is critical and complex.
+    \item \textbf{Model Generalization (Over/Under-fitting):}\\ \textbf{Risk:} The risk of the model either over-fitting to specific biases present in the training data or under-fitting due to the complexity of analyzing multiple skin attributes simultaneously. \\ \textbf{Mitigation:} The plan to use rigorous k-fold cross-validation and Cross-Dataset Comparisons is essential to verify generalizability and robustness.
+    \item \textbf{Demographic Fairness and Bias:}\\ \textbf{Challenge:} Public datasets may exhibit demographic biases (e.g., less representation for certain skin types), which can lead to performance degradation or inequitable assessments for some users.\\ \textbf{Mitigation:} This requires explicit Fairness Checks and the application of rule-based corrections in the Business Logic Processor where justified.
+    \item \textbf{Multi-Attribute Analysis Strategy:}\\ \textbf{Challenge:} Determining the most effective model strategy—exploring Multitask Learning (MTL) vs. multiple single-task models—to simultaneously and accurately score all required skin attributes (dryness, oiliness, acne, etc.) will be a core modeling challenge.
+\end{itemize}
+
+\subsection{Architectural \& Implementation Risks}
+\begin{itemize}
+    \item \textbf{Rule-Based Logic Complexity (Business Logic Processor):}\\ \textbf{Risk:} The final ingredient recommendations are determined by a complex, rule-based system that uses the Ingredient Knowledge Base. Any flaw in the dermatological rules or the internal algorithm for ingredient matching could lead to ineffective or even detrimental recommendations.\\ \textbf{Mitigation:} Requires the scheduled Research phase to ensure the rules are scientifically credible and professionally validated.
+    \item \textbf{Initial Feature Limitation (Skin Segmentation):}\\ \textbf{Risk:} The initial decision to defer Skin Segmentation (Priority 2) means the system cannot provide precise, localized treatment instructions (e.g., "apply to the cheek"). This limits the utility for users with spot-specific issues, necessitating a workaround (see section 6.3) in the initial release.
+\end{itemize}
+
+\subsection{Key Assumptions}
+\begin{itemize}
+    \item \textbf{Input Quality:} It is assumed that the client-side Face Lock Mechanism will be robust enough to successfully filter out low-quality, unusable, or non-face images, ensuring the Deep Learning (ML) Service always receives a photo that meets its quality standards. It has yet to be determined whether one picture is indeed enough to produce satisfactory results - while it is the simplest most user friendly approach, in the event that this method is found to be insufficient, measures will be taken (e.g., requesting more pictures) to ensure the best outcome with optimal performance.
+    \item \textbf{Progress Tracking Validity:} The Skin Progress Tracking (Priority 1) feature relies on the assumption that comparing historical metadata scores (severity levels like 'Low/Medium/High') is a sufficient and valid method for users to track long-term skin changes.
+    \item \textbf{Localized Tracking Ambiguity:} It is an unaddressed challenge that the model currently outputs a single, aggregate score for a skin attribute (e.g., "Acne Level" for the whole face). The assumption is that this single score is sufficient for the user. However, if an attribute like acne improves in one area (e.g., the forehead) but worsens in another, the single score may fail to capture this localized change, potentially providing confusing feedback to the user until Skin Segmentation is integrated.
+\end{itemize}
+
+\section{References}
+\begin{itemize}
+    \item \url{https://www.laroche-posay.us/find-your-routine/myroutine-ai-analysis.html}
+    \item \url{www.skinvision.com}
+    \item \url{www.cetaphil.com}
+    \item \url{www.neutrogena.com}
+    \item \url{www.olay.com}
+    \item \url{https://www.perfectcorp.com}
+    \item \url{https://haut.ai}
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,37 @@
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {2.1}{\ignorespaces Positioning of \textsc {Cara}\xspace relative to representative existing products.\relax }}{6}{table.caption.6}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {4.1}{\ignorespaces Final training datasets used by \textsc {Cara}\xspace . Splits are 70 / 15 / 15 (train / val / test) for the datasets we split ourselves; \texttt {skin\_type} came pre-split by the original authors.\relax }}{15}{table.caption.8}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Class distribution and derived per-class weights for the acne severity training set. Weights follow the balanced scheme in \Cref {eq:weights}, and match the numbers used by our training script.\relax }}{15}{table.caption.9}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces Split sizes for the acne severity task.\relax }}{15}{table.caption.10}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces Split sizes for skin type.\relax }}{16}{table.caption.11}%
+\contentsline {table}{\numberline {4.5}{\ignorespaces Class distribution and derived per-class weights for skin type.\relax }}{16}{table.caption.12}%
+\contentsline {table}{\numberline {4.6}{\ignorespaces Classes dropped from the Phase-2 skin-issues dataset, with reasons.\relax }}{16}{table.caption.13}%
+\contentsline {table}{\numberline {4.7}{\ignorespaces Composition of \texttt {data/skin\_conditions/} (Phase-3 retrain \#2). ``skintype\_'' files are prefixed on disk so each is traceable to its source class.\relax }}{17}{table.caption.14}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {5.1}{\ignorespaces Candidate architectures compared during Phase 2. The fourth row is what we ship.\relax }}{23}{table.caption.18}%
+\contentsline {table}{\numberline {5.2}{\ignorespaces The multi-label refactor at a glance.\relax }}{26}{table.caption.19}%
+\contentsline {table}{\numberline {5.3}{\ignorespaces Real-world regression on the multi-label skin-conditions model, before and after the domain-adaptation retrain.\relax }}{28}{table.caption.20}%
+\contentsline {table}{\numberline {5.4}{\ignorespaces Rule coverage over the three label spaces, from \texttt {backend/blp/rules.json}.\relax }}{31}{table.caption.21}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {6.1}{\ignorespaces Two-phase versus single-phase training on the acne severity task. Numbers are best validation accuracy.\relax }}{34}{table.caption.22}%
+\contentsline {table}{\numberline {6.2}{\ignorespaces Backbone consideration. Params and FLOPs are from the published papers; latency is approximate on our reference CPU. We did not build the full ResNet-50 pipeline because its inference latency did not fit our budget.\relax }}{35}{table.caption.23}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {7.1}{\ignorespaces Final validation metrics for the three models, from \texttt {training\_log.txt}.\relax }}{37}{table.caption.24}%
+\contentsline {table}{\numberline {7.2}{\ignorespaces Real-world regression outcomes before and after the Phase-3 rework. ``Population sanity'' rows are boolean: either the model can produce the class at least once on the folder or it cannot.\relax }}{38}{table.caption.26}%
+\contentsline {table}{\numberline {7.3}{\ignorespaces Representative end-to-end reports.\relax }}{39}{table.caption.27}%
+\contentsline {table}{\numberline {7.4}{\ignorespaces Approximate wall-clock latency breakdown of a single \texttt {/api/analyze} request. Reference hardware: mid-range laptop CPU, warm cache. The three model inferences run sequentially in the current implementation.\relax }}{39}{table.caption.28}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {9.1}{\ignorespaces Composition of the \textsc {Cara}\xspace test suite.\relax }}{52}{table.caption.39}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {D.1}{\ignorespaces Frequently used ingredients in the \textsc {Cara}\xspace recommendation vocabulary.\relax }}{66}{table.D.1}%
+\addvspace {10\p@ }

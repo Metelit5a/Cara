@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { loginUser } from '../api';
 
 const API_BASE = process.env.REACT_APP_API_BASE || '/api/v1';
 
 function Login({ authValue }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = location.state?.from?.pathname || '/';
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -31,9 +34,8 @@ function Login({ authValue }) {
       if (!response.ok) {
         throw new Error(data.detail || 'Login failed');
       }
-
       authValue.login(data.access_token, formData.email.split('@')[0]);
-      navigate('/');
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(err.message || 'Unexpected error');
     } finally {
@@ -45,6 +47,12 @@ function Login({ authValue }) {
     <div className="card auth-card">
       <h2>Welcome back</h2>
       <p className="auth-subtitle">Sign in to continue your skincare journey.</p>
+
+      {location.state?.from && (
+        <div className="status-message status-info">
+          Please log in to continue — your skin analysis is just one step away.
+        </div>
+      )}
 
       {error && <div className="status-message status-error">{error}</div>}
 
@@ -81,7 +89,8 @@ function Login({ authValue }) {
       </form>
 
       <p className="auth-link-row">
-        Don&apos;t have an account? <Link to="/register">Create one</Link>
+        Don&apos;t have an account?{' '}
+        <Link to="/register" state={location.state}>Create one</Link>
       </p>
     </div>
   );
