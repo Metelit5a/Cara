@@ -23,6 +23,7 @@ function Register({ authValue }) {
     try {
       await registerUser(formData);
       const loginData = await loginUser({ email: formData.email, password: formData.password });
+      
       authValue.login(loginData.access_token, formData.username);
       navigate(redirectTo, { replace: true });
     } catch (err) {

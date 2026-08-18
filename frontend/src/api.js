@@ -1,4 +1,5 @@
-const API_BASE = '/api/v1';
+const DEFAULT_API_BASE = '/api/v1';
+const API_BASE = process.env.REACT_APP_API_BASE || DEFAULT_API_BASE;
 
 export async function analyzeImage(file) {
   const formData = new FormData();
