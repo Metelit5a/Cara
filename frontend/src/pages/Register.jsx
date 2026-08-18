@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { registerUser, loginUser } from '../api';
 
-const API_BASE = process.env.REACT_APP_API_BASE || '/api/v1';
-
 function Register({ authValue }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -23,28 +21,9 @@ function Register({ authValue }) {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Registration failed');
-      }
-
-      const loginResponse = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email, password: formData.password }),
-      });
-
-      const loginData = await loginResponse.json();
-      if (!loginResponse.ok) {
-        throw new Error(loginData.detail || 'Login failed');
-      }
+      await registerUser(formData);
+      const loginData = await loginUser({ email: formData.email, password: formData.password });
+      
       authValue.login(loginData.access_token, formData.username);
       navigate(redirectTo, { replace: true });
     } catch (err) {

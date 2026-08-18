@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { loginUser } from '../api';
 
-const API_BASE = process.env.REACT_APP_API_BASE || '/api/v1';
-
 function Login({ authValue }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -23,17 +21,7 @@ function Login({ authValue }) {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Login failed');
-      }
+      const data = await loginUser(formData);
       authValue.login(data.access_token, formData.email.split('@')[0]);
       navigate(redirectTo, { replace: true });
     } catch (err) {
