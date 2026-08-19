@@ -1,0 +1,139 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{amsmath}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    urlcolor=blue!70!black,
+}
+
+\title{\textbf{Cara: AI-Powered Assistant for Cosmetic Skin Analysis}\\ \Large Comprehensive Project Documentation}
+\author{\textbf{Team 520:} Sarit Metelitsa, Ronen Metelitsa, Noa Shaanan, Elyasaf Namir \\ \textbf{Supervisor:} Dr. Raz Lin \\ \textbf{Git:} \url{https://github.com/Metelit5a/Cara}}
+\date{August 2026}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Executive Summary}
+Cara is an intelligent, AI-powered skincare analysis system designed to provide users with personalized insights about their skin condition. The system bridges the gap between medical diagnostics and commercial marketing. By analyzing a user's facial image using a modular deep learning pipeline, Cara evaluates attributes such as dryness, oiliness, acne severity, pore visibility, blackheads, redness, and fine lines. 
+
+Unlike competitor apps that push specific commercial brands, Cara recommends active chemical ingredients (e.g., salicylic acid, niacinamide) ensuring objective, unbiased advice. The project utilizes a modular architecture with separated inference and business logic layers, deployed via modern serverless and containerized technologies.
+
+\section{Mission and Vision}
+\begin{itemize}
+    \item \textbf{Explainable AI:} Providing actionable, understandable skincare insights rather than opaque medical advice.
+    \item \textbf{Unbiased Recommendations:} Ingredient-based analysis instead of commercial product marketing.
+    \item \textbf{Progress Tracking:} Visualizing skin trends over time, helping users identify seasonal patterns and routine effectiveness.
+    \item \textbf{Modular Architecture:} A production-ready POC validating an end-to-end (E2E) AI pipeline, separating the ML inference layer from the business logic layer.
+\end{itemize}
+
+\section{Related Work and Market Gap}
+Existing consumer apps (e.g., Perfectcorp, HiMirror, Haut.ai) and brand-specific tools (La Roche-Posay, Cetaphil, Neutrogena) offer convenient image analysis but are often marketing-driven, aiming to promote their own inventory. These tools rarely offer transparent explanations of their models or provide long-term monitoring. 
+
+Academic models (trained on datasets like HAM10000 or DermNet) focus on clinical diagnosis (e.g., melanoma) rather than cosmetic concerns. Cara fills this gap by being an independent, transparent, and lifestyle-oriented companion.
+
+\section{System Architecture}
+Cara's modular architecture is designed for scalability and clear separation of concerns.
+
+\subsection{Frontend (Client Application)}
+\begin{itemize}
+    \item \textbf{Technology:} React application deployed on \textbf{Vercel} for fast, zero-cost serverless deployment globally.
+    \item \textbf{Responsibilities:} Handles UI/UX, JWT-based user authentication, image capture, interactive dashboards, and tracking graphs.
+\end{itemize}
+
+\subsection{Backend Gateway}
+\begin{itemize}
+    \item \textbf{Technology:} FastAPI application containerized with Docker, deployed on \textbf{Google Cloud Run} to handle compute-heavy ML tasks securely without strict API timeouts.
+    \item \textbf{Responsibilities:} Orchestrates the flow, coordinates between the Deep Learning Service and the Business Logic Processor (BLP), and manages API endpoints (\texttt{/api/auth}, \texttt{/api/analyze}, \texttt{/api/recommendation}, \texttt{/api/history}).
+\end{itemize}
+
+\subsection{Database}
+\begin{itemize}
+    \item \textbf{Technology:} \textbf{Firebase / Firestore} (NoSQL).
+    \item \textbf{Responsibilities:} Secure, global data access with real-time syncing. Manages User Data, Analysis History (for progress tracking), and the Ingredient Knowledge Base.
+\end{itemize}
+
+\section{Deep Learning (ML) Service}
+The core analysis engine translates clinical data into consumer-friendly insights. 
+
+\subsection{Datasets}
+\begin{itemize}
+    \item \textbf{ACNE04 (approx. 1,000+ images):} Pimples, black/white heads. Used for acne identification and severity.
+    \item \textbf{Fitzpatrick 17k (approx. 17,000 images):} 100+ skin conditions. Used for skin type classification.
+    \item \textbf{CelebA (approx. 200,000 images):} 40+ facial features. Used for identifying specific attributes like large pores or oily skin.
+    \item \textbf{HAM10000 / DermNet (approx. 20,000 images):} Used for enhancement of spot and redness detection in a non-medical context.
+\end{itemize}
+
+\subsection{Architecture Research (Sprint 1-2)}
+Each team member explored a distinct architecture over two sprints to balance inference speed, pre-training advantages, and classification accuracy on the ACNE04 dataset:
+\begin{itemize}
+    \item \textbf{Sarit - CNN (ResNet):} Baseline model testing traditional residual learning ($\sim$55\% Accuracy).
+    \item \textbf{Elyasaf - DenseNet:} Analyzing dense feature reuse ($\sim$62\% Accuracy).
+    \item \textbf{Ronen - ViT (Transformer):} Strong competitor using global context modeling ($\sim$68\% Accuracy).
+    \item \textbf{Noa - EfficientNet (Winner):} Leveraged massive pre-trained weights and compound scaling (\textbf{73.1\% Accuracy}).
+\end{itemize}
+\textbf{Conclusion:} EfficientNet easily outperformed the others with minimal training on the dataset size due to incredibly sharp initial weights.
+
+\subsection{Training Progression: Deep Dive}
+\begin{itemize}
+    \item \textbf{Phase 1:} Frozen Backbone (10 Epochs) leveraging pre-trained weights. Validation Accuracy: 56.5\%.
+    \item \textbf{Phase 2:} Fine-Tuning (5 Epochs) unfreezing upper layers. Validation Accuracy: 73.1\%.
+    \item \textbf{Final Evaluation:} Generalization on unseen test set: 69.5\%.
+\end{itemize}
+
+\subsection{Overcoming ML Challenges \& Model Evolution}
+Post-POC, the team encountered and resolved several critical ML challenges:
+\begin{itemize}
+    \item \textbf{The Low Confidence Bug:} Addressed data noise and structural inconsistencies, retraining models to guarantee high confidence levels.
+    \item \textbf{Data Bias \& "Clear Face" Purge:} Discovered a dataset lacking "clear face" negative samples, causing the model to universally predict "severe acne". Engineered a creative domain adaptation solution by repurposing $\sim$2,000 existing clear-face images as negative anchors, achieving a 0.996 macro-F1 score without expensive relabeling.
+    \item \textbf{Multi-Label Reframing:} Shifted from single-label (Softmax) to multi-label (BCEWithLogitsLoss), mathematically allowing models to output "None" and eliminating hallucinations on clean faces.
+    \item \textbf{Parallel Diagnostic Models:} Expanded from a single POC model to three specialized models: \textit{Acne Severity}, \textit{Acne Types} (whiteheads, blackheads, cysts), and \textit{Pores Detection}.
+\end{itemize}
+
+\section{Business Logic Processor (BLP)}
+The BLP acts as the bridge between raw ML metrics (e.g., Acne score: 0.16) and user-facing actionable recommendations.
+\begin{itemize}
+    \item \textbf{Rule-Based Translation:} Converts model outputs into categorical assessments ("High Dryness", "Moderate Acne").
+    \item \textbf{Multi-Model Input:} Processes outputs from all parallel diagnostic models simultaneously.
+    \item \textbf{Advanced Validation \& Ingredient Matching:} Queries the Database's Ingredient Knowledge Base to map skin conditions to treatments. It uses complex logic checks to filter out clashing ingredients (preventing negative reactions) and compiles the safest, most effective routine.
+    \item \textbf{Explainable Recommendations:} Every result includes an educational note explaining the 'Why' behind the suggested ingredient.
+\end{itemize}
+
+\section{Client-Side Features and UX}
+\begin{itemize}
+    \item \textbf{User Authentication \& Data Isolation:} Complete JWT-based infrastructure. Every scan is securely linked exclusively to the user's account.
+    \item \textbf{Face Validation Architecture (Hybrid Approach):}
+    \begin{itemize}
+        \item \textit{Frontend (Real-Time Guidance):} Interactive live camera feed tracking user position ("move closer", "center face"). Implements an auto-crop mechanism with rotational retry ($\pm15^{\circ}$, $\pm30^{\circ}$) bypassing EXIF orientation failures.
+        \item \textit{Backend (Server-Side Detection):} For gallery uploads, ensuring a face actually exists to save compute power.
+    \end{itemize}
+    \item \textbf{Interactive Dashboard:} Visualizes skin condition progress over time with clickable tooltips (confidence levels, skin type) and routine effectiveness feedback logs.
+\end{itemize}
+
+\section{Project Management \& Implementation Strategy}
+\subsection{The Pivot: Resilience \& Teamwork}
+Due to the war and severe shifts in availability, the team realized isolated Git development was unrealistic. Because the core project was Deep Learning, the team pivoted to gathering online via Zoom to build the implementation together, successfully overcoming external challenges to deploy an E2E demo.
+
+\subsection{Conference Presentation Strategy}
+\begin{itemize}
+    \item \textbf{Live Interactive Scans:} Devices ready for real-time demonstrations.
+    \item \textbf{Failsafe Demo Loop:} Pre-recorded screen captures of the flawless E2E journey, ensuring resilience against hall lighting or Wi-Fi drops.
+    \item \textbf{Elevator Pitch:} A 3-minute pitch focusing on overcoming AI bias, seamless UX, and tailored precision.
+\end{itemize}
+
+\section{Conclusion}
+The Cara project successfully transitioned from five flawed experimental models to three standardized EfficientNetB0 models driven by a sophisticated BLP. By abstracting the deep learning models from the frontend logic, the system is perfectly set up for future scaling, allowing new teams to swap models or add classifiers without breaking the stack.
+
+\end{document}

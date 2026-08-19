@@ -1,0 +1,138 @@
+\contentsline {chapter}{Abstract}{i}{chapter*.1}%
+\contentsline {chapter}{Acknowledgements}{ii}{chapter*.2}%
+\contentsline {chapter}{List of Figures}{viii}{chapter*.4}%
+\contentsline {chapter}{List of Tables}{ix}{chapter*.5}%
+\contentsline {chapter}{\numberline {1}Introduction and Motivation}{1}{chapter.1}%
+\contentsline {section}{\numberline {1.1}The problem we set out to solve}{1}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Why this problem is a good fit for deep learning}{1}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Non-negotiable design principles}{2}{section.1.3}%
+\contentsline {section}{\numberline {1.4}The three phases at a glance}{2}{section.1.4}%
+\contentsline {section}{\numberline {1.5}Contributions}{3}{section.1.5}%
+\contentsline {section}{\numberline {1.6}Reading guide}{3}{section.1.6}%
+\contentsline {chapter}{\numberline {2}Background and Related Work}{4}{chapter.2}%
+\contentsline {section}{\numberline {2.1}The clinical baseline}{4}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Public datasets we evaluated}{4}{section.2.2}%
+\contentsline {section}{\numberline {2.3}Related academic work}{5}{section.2.3}%
+\contentsline {subsection}{\numberline {2.3.1}Lesion classification on dermoscopic images}{5}{subsection.2.3.1}%
+\contentsline {subsection}{\numberline {2.3.2}Acne severity grading}{5}{subsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.3.3}Skin-type and cosmetic assessment}{5}{subsection.2.3.3}%
+\contentsline {subsection}{\numberline {2.3.4}Multi-label medical image classification}{5}{subsection.2.3.4}%
+\contentsline {section}{\numberline {2.4}Commercial and industrial products}{6}{section.2.4}%
+\contentsline {section}{\numberline {2.5}Where \textsc {Cara}\xspace fits in the picture}{6}{section.2.5}%
+\contentsline {chapter}{\numberline {3}Academic Background}{7}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Image classification, formally}{7}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Multi-label classification}{7}{section.3.2}%
+\contentsline {section}{\numberline {3.3}Convolutional neural networks}{8}{section.3.3}%
+\contentsline {section}{\numberline {3.4}From AlexNet to EfficientNet}{8}{section.3.4}%
+\contentsline {section}{\numberline {3.5}Transfer learning}{9}{section.3.5}%
+\contentsline {section}{\numberline {3.6}Regularisation and augmentation}{9}{section.3.6}%
+\contentsline {section}{\numberline {3.7}Class imbalance}{9}{section.3.7}%
+\contentsline {section}{\numberline {3.8}Optimisation}{10}{section.3.8}%
+\contentsline {section}{\numberline {3.9}Rule-based systems and BLP}{10}{section.3.9}%
+\contentsline {section}{\numberline {3.10}Softmax, cross-entropy and their gradient}{10}{section.3.10}%
+\contentsline {section}{\numberline {3.11}Batch normalisation}{11}{section.3.11}%
+\contentsline {section}{\numberline {3.12}Metrics beyond accuracy}{11}{section.3.12}%
+\contentsline {chapter}{\numberline {4}The Data}{12}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Phase 1: the initial data landscape}{12}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Phase 2: consolidation on cleaner anchor data}{12}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Phase 3: the audit and the rebuild}{13}{section.4.3}%
+\contentsline {subsection}{\numberline {4.3.1}The acne dataset: bounding boxes were not the point}{13}{subsection.4.3.1}%
+\contentsline {subsection}{\numberline {4.3.2}The ``healthy'' folder that was not healthy}{13}{subsection.4.3.2}%
+\contentsline {subsection}{\numberline {4.3.3}The ``wrinkles'' folder that was elderly stock photos}{14}{subsection.4.3.3}%
+\contentsline {subsection}{\numberline {4.3.4}Softmax cannot say ``none''}{14}{subsection.4.3.4}%
+\contentsline {subsection}{\numberline {4.3.5}The preprocessing pipeline that was dead code}{14}{subsection.4.3.5}%
+\contentsline {section}{\numberline {4.4}Phase 3: the final dataset layout}{14}{section.4.4}%
+\contentsline {subsection}{\numberline {4.4.1}Acne severity split and weights}{14}{subsection.4.4.1}%
+\contentsline {subsection}{\numberline {4.4.2}Skin-type split and weights}{15}{subsection.4.4.2}%
+\contentsline {subsection}{\numberline {4.4.3}Skin-conditions dataset (multi-label)}{15}{subsection.4.4.3}%
+\contentsline {subsection}{\numberline {4.4.4}BCE positive weights for skin conditions}{16}{subsection.4.4.4}%
+\contentsline {section}{\numberline {4.5}Splits and reproducibility}{17}{section.4.5}%
+\contentsline {section}{\numberline {4.6}Cleaning}{17}{section.4.6}%
+\contentsline {section}{\numberline {4.7}Augmentation}{17}{section.4.7}%
+\contentsline {section}{\numberline {4.8}The label agreement problem}{18}{section.4.8}%
+\contentsline {chapter}{\numberline {5}Our Algorithms}{19}{chapter.5}%
+\contentsline {section}{\numberline {5.1}The final pipeline, end to end}{19}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Why EfficientNet-B0\xspace , and why three of them}{20}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Two-phase transfer learning}{20}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Phase 2: comparing four candidate architectures}{21}{section.5.4}%
+\contentsline {subsection}{\numberline {5.4.1}Candidate 1 --- single multi-task EfficientNet-B0\xspace }{21}{subsection.5.4.1}%
+\contentsline {subsection}{\numberline {5.4.2}Candidate 2 --- three independent EfficientNet-B0\xspace + weighted-vote fusion}{22}{subsection.5.4.2}%
+\contentsline {subsection}{\numberline {5.4.3}Candidate 3 --- three independent EfficientNet-B0\xspace + learned MLP fusion}{22}{subsection.5.4.3}%
+\contentsline {subsection}{\numberline {5.4.4}Candidate 4 --- three independent EfficientNet-B0\xspace + rule-based BLP}{23}{subsection.5.4.4}%
+\contentsline {subsection}{\numberline {5.4.5}Summary of the Phase-2 comparison}{23}{subsection.5.4.5}%
+\contentsline {section}{\numberline {5.5}Phase 3, part 1: real-world failures}{23}{section.5.5}%
+\contentsline {section}{\numberline {5.6}Preprocessing parity}{24}{section.5.6}%
+\contentsline {subsection}{\numberline {5.6.1}Face detection and cropping}{24}{subsection.5.6.1}%
+\contentsline {subsection}{\numberline {5.6.2}The dead-code discovery}{25}{subsection.5.6.2}%
+\contentsline {subsection}{\numberline {5.6.3}EXIF orientation and rotation retry}{25}{subsection.5.6.3}%
+\contentsline {section}{\numberline {5.7}Phase 3, part 2: refactoring skin issues to multi-label}{26}{section.5.7}%
+\contentsline {subsection}{\numberline {5.7.1}Downstream code changes}{26}{subsection.5.7.1}%
+\contentsline {section}{\numberline {5.8}Phase 3, part 3: the domain-adaptation retrain}{27}{section.5.8}%
+\contentsline {subsection}{\numberline {5.8.1}The creative fix: cross-task negative mining}{27}{subsection.5.8.1}%
+\contentsline {subsection}{\numberline {5.8.2}The retrain and the honest numbers}{28}{subsection.5.8.2}%
+\contentsline {subsection}{\numberline {5.8.3}Why this is defensible}{29}{subsection.5.8.3}%
+\contentsline {section}{\numberline {5.9}Confidence and uncertainty}{29}{section.5.9}%
+\contentsline {section}{\numberline {5.10}The BLP recommendation engine}{29}{section.5.10}%
+\contentsline {subsection}{\numberline {5.10.1}Rule design principles}{30}{subsection.5.10.1}%
+\contentsline {subsection}{\numberline {5.10.2}Coverage over the label spaces}{30}{subsection.5.10.2}%
+\contentsline {section}{\numberline {5.11}Codebase sanitation}{31}{section.5.11}%
+\contentsline {section}{\numberline {5.12}Backpropagation, in one page}{31}{section.5.12}%
+\contentsline {chapter}{\numberline {6}Experiments}{33}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Experimental setup}{33}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Failed experiment: naive resizing without face crop}{33}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Failed experiment: unweighted cross-entropy}{34}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Failed experiment: aggressive augmentation}{34}{section.6.4}%
+\contentsline {section}{\numberline {6.5}Successful comparison: two-phase versus single-phase training}{34}{section.6.5}%
+\contentsline {section}{\numberline {6.6}Successful comparison: backbone consideration}{35}{section.6.6}%
+\contentsline {section}{\numberline {6.7}The real-world regression suite}{35}{section.6.7}%
+\contentsline {chapter}{\numberline {7}Results and Evaluation}{37}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Final headline numbers}{37}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Interpreting the numbers}{37}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Real-world regression results}{38}{section.7.3}%
+\contentsline {section}{\numberline {7.4}Qualitative case studies}{38}{section.7.4}%
+\contentsline {section}{\numberline {7.5}Latency and resource profile}{39}{section.7.5}%
+\contentsline {chapter}{\numberline {8}The Product}{40}{chapter.8}%
+\contentsline {section}{\numberline {8.1}User story}{40}{section.8.1}%
+\contentsline {section}{\numberline {8.2}The landing page and disclaimer}{40}{section.8.2}%
+\contentsline {section}{\numberline {8.3}Authentication}{40}{section.8.3}%
+\contentsline {section}{\numberline {8.4}Analyze --- upload and live capture}{42}{section.8.4}%
+\contentsline {subsection}{\numberline {8.4.1}File-picker flow}{42}{subsection.8.4.1}%
+\contentsline {subsection}{\numberline {8.4.2}Live-camera capture with face lock}{42}{subsection.8.4.2}%
+\contentsline {section}{\numberline {8.5}Results}{42}{section.8.5}%
+\contentsline {section}{\numberline {8.6}History and progress tracking}{43}{section.8.6}%
+\contentsline {section}{\numberline {8.7}System architecture}{43}{section.8.7}%
+\contentsline {section}{\numberline {8.8}Frontend}{49}{section.8.8}%
+\contentsline {section}{\numberline {8.9}Backend}{49}{section.8.9}%
+\contentsline {section}{\numberline {8.10}Storage}{49}{section.8.10}%
+\contentsline {section}{\numberline {8.11}Deployment}{50}{section.8.11}%
+\contentsline {chapter}{\numberline {9}Software Engineering, Testing, and MLOps}{51}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Repository layout}{51}{section.9.1}%
+\contentsline {section}{\numberline {9.2}Testing pyramid}{51}{section.9.2}%
+\contentsline {subsection}{\numberline {9.2.1}Unit tests}{52}{subsection.9.2.1}%
+\contentsline {subsection}{\numberline {9.2.2}Integration tests}{52}{subsection.9.2.2}%
+\contentsline {subsection}{\numberline {9.2.3}Model accuracy tests}{52}{subsection.9.2.3}%
+\contentsline {subsection}{\numberline {9.2.4}End-to-end tests}{52}{subsection.9.2.4}%
+\contentsline {subsection}{\numberline {9.2.5}Real-world regression tests}{53}{subsection.9.2.5}%
+\contentsline {section}{\numberline {9.3}Reproducibility}{53}{section.9.3}%
+\contentsline {section}{\numberline {9.4}Debugging techniques we relied on}{53}{section.9.4}%
+\contentsline {section}{\numberline {9.5}Configuration and secrets}{53}{section.9.5}%
+\contentsline {section}{\numberline {9.6}Checkpoint management}{53}{section.9.6}%
+\contentsline {chapter}{\numberline {10}Discussion}{55}{chapter.10}%
+\contentsline {section}{\numberline {10.1}Interpreting the story}{55}{section.10.1}%
+\contentsline {section}{\numberline {10.2}What worked}{55}{section.10.2}%
+\contentsline {section}{\numberline {10.3}What did not work}{55}{section.10.3}%
+\contentsline {section}{\numberline {10.4}Threats to validity}{56}{section.10.4}%
+\contentsline {section}{\numberline {10.5}Ethical considerations}{56}{section.10.5}%
+\contentsline {chapter}{\numberline {11}Conclusions}{57}{chapter.11}%
+\contentsline {chapter}{\numberline {12}Future Work}{58}{chapter.12}%
+\contentsline {section}{\numberline {12.1}Better data for the minority classes}{58}{section.12.1}%
+\contentsline {section}{\numberline {12.2}Ordinal regression for acne severity}{58}{section.12.2}%
+\contentsline {section}{\numberline {12.3}Attention-based visualisation}{58}{section.12.3}%
+\contentsline {section}{\numberline {12.4}On-device inference}{58}{section.12.4}%
+\contentsline {section}{\numberline {12.5}Larger regression set with diverse skin tones}{58}{section.12.5}%
+\contentsline {section}{\numberline {12.6}Formal dermatologist review of the rules}{59}{section.12.6}%
+\contentsline {chapter}{\numberline {A}API reference}{62}{appendix.A}%
+\contentsline {chapter}{\numberline {B}Report schema}{63}{appendix.B}%
+\contentsline {chapter}{\numberline {C}Reproducibility recipe}{64}{appendix.C}%
+\contentsline {chapter}{\numberline {D}Ingredient reference}{65}{appendix.D}%
+\contentsline {chapter}{\numberline {E}Glossary}{67}{appendix.E}%

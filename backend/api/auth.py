@@ -1,8 +1,6 @@
 """Authentication endpoints and helpers for the Cara backend."""
 
-import json
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import jwt
@@ -10,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from passlib.context import CryptContext
 
+from backend.database.repository import create_repository
 from shared.schemas import Token, UserCreate, UserLogin
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -22,24 +21,22 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
-def get_users_file() -> Path:
-    users_file = Path("storage/users.json")
-    users_file.parent.mkdir(parents=True, exist_ok=True)
-    return users_file
+_repository = create_repository()
+
+async def load_users() -> List[Dict[str, Any]]:
+    return await _repository.list_users()
 
 
-def load_users() -> List[Dict[str, Any]]:
-    users_file = get_users_file()
-    if not users_file.exists():
-        users_file.write_text("[]", encoding="utf-8")
-    with users_file.open("r", encoding="utf-8") as handle:
-        return json.load(handle)
-
-
-def save_users(users: List[Dict[str, Any]]) -> None:
-    users_file = get_users_file()
-    with users_file.open("w", encoding="utf-8") as handle:
-        json.dump(users, handle, indent=2)
+async def save_users(users: List[Dict[str, Any]]) -> None:
+    # Replace entire users file/collection
+    # For JSON backend, list_users + save_user for each user is used by callers.
+    # Keep a simple implementation that writes each user via save_user.
+    # Clear existing by writing via repository (JSON backend will overwrite file when saving users sequentially).
+    # First remove all existing users (only JSON backend supports replace via file in our implementation).
+    existing = await _repository.list_users()
+    # naive replace: save each provided user (they should contain ids when relevant)
+    for u in users:
+        await _repository.save_user(u)
 
 
 def hash_password(password: str) -> str:
@@ -61,9 +58,10 @@ def create_access_token(subject: str, expires_delta: timedelta | None = None) ->
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def get_current_user(
+async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
 ) -> Optional[Dict[str, Any]]:
+    # Make this dependency async so it can query the storage backend.
     if credentials is None:
         return None
 
@@ -76,11 +74,12 @@ def get_current_user(
     if not subject:
         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
 
-    users = load_users()
-    user = next(
-        (u for u in users if str(u.get("id")) == str(subject) or u.get("email") == str(subject)),
-        None,
-    )
+    # subject is usually the user id; try to load by id first, then by email
+    user = None
+    user = await _repository.get_user(user_id=subject)
+
+    if user is None:
+        user = await _repository.get_user(email=str(subject))
     if user is None:
         raise HTTPException(status_code=401, detail="User not found")
 
@@ -89,28 +88,24 @@ def get_current_user(
 
 @router.post("/register", response_model=Dict[str, str])
 async def register_user(user: UserCreate):
-    users = load_users()
-
-    if any(existing_user["email"] == user.email for existing_user in users):
+    # Check existing by email
+    existing = await _repository.get_user(email=user.email)
+    if existing is not None:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     new_user = {
-        "id": str(len(users) + 1),
         "username": user.username,
         "email": user.email,
         "hashed_password": hash_password(user.password),
     }
-    users.append(new_user)
-    save_users(users)
+    user_id = await _repository.save_user(new_user)
 
-    return {"message": "User registered successfully"}
+    return {"message": "User registered successfully", "id": user_id}
 
 
 @router.post("/login", response_model=Token)
 async def login_user(user: UserLogin):
-    users = load_users()
-
-    stored_user = next((u for u in users if u["email"] == user.email), None)
+    stored_user = await _repository.get_user(email=user.email)
     if stored_user is None or not verify_password(user.password, stored_user["hashed_password"]):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 

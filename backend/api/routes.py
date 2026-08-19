@@ -68,7 +68,7 @@ async def get_report(
     report_id: str,
     current_user: Optional[Dict[str, Any]] = Depends(get_current_user),
 ):
-    """Retrieve a previously generated report by ID."""
+    """Retrieve a previously generated report by ID (owner only)."""
     if current_user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
 
@@ -84,7 +84,7 @@ async def list_reports(
     limit: int = 50,
     current_user: Optional[Dict[str, Any]] = Depends(get_current_user),
 ):
-    """List recent analysis reports."""
+    """List recent analysis reports for the authenticated user."""
     if current_user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
 
