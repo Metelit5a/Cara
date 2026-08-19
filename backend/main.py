@@ -26,9 +26,9 @@ async def lifespan(app: FastAPI):
     # Startup: load models (orchestrator handles loading)
     logger.info("Loading models...")
     orchestrator = get_orchestrator()
-
-    # Ensure storage directories exist
-    Path(settings.storage_path, "reports").mkdir(parents=True, exist_ok=True)
+    if settings.storage_backend == "json":
+        # Ensure storage directories exist
+        Path(settings.storage_path, "reports").mkdir(parents=True, exist_ok=True)
 
     logger.info(f"Cara backend ready — models loaded: {orchestrator.loaded_models}")
     yield
